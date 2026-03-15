@@ -1,0 +1,31 @@
+{
+  "model_name": "Random Forest",
+  "accuracy": 0.7866066966516742,
+  "f1_score": 0.7864735979282361,
+  "cv_mean": 0.7731134432783607,
+  "cv_std": 0.002675725204765805,
+  "classes": [
+    "CONSUMER",
+    "FARMING",
+    "RETAIL_WHOLESALE"
+  ],
+  "class_mapping": {
+    "BUS_B01": "RETAIL_WHOLESALE",
+    "BUS_B02": "RETAIL_WHOLESALE",
+    "BUS_B03": "RETAIL_WHOLESALE",
+    "BUS_S01": "RETAIL_WHOLESALE",
+    "BUS_S02": "RETAIL_WHOLESALE",
+    "BUS_S03": "RETAIL_WHOLESALE",
+    "BUS_F01": "FARMING",
+    "BUS_F02": "FARMING",
+    "BUS_F03": "FARMING",
+    "BUS_F04": "FARMING",
+    "BUS_C01": "CONSUMER",
+    "BUS_C02": "CONSUMER"
+  },
+  "categorical_features": [
+    "role"
+  ],
+  "num_features": 30,
+  "training_date": "2026-03-07T18:38:00.210785"
+}

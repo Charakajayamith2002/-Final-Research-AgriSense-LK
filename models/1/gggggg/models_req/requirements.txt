@@ -1,0 +1,16 @@
+# Core requirements for Component 1 - Price Prediction
+# Date: 2025-12-22 18:11:03
+# These are the essential libraries for the project
+
+joblib==1.5.2
+joblib==1.5.2
+lightgbm==4.6.0
+matplotlib==3.7.2
+numpy==1.26.4
+optuna==4.5.0
+pandas==2.2.3
+scipy==1.15.3
+seaborn==0.12.2
+sklearn==1.2.2
+statsmodels==0.14.5
+statsmodels==0.14.5

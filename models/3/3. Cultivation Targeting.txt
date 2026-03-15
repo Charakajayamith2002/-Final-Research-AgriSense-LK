@@ -1,0 +1,3316 @@
+# Section 1: Import Libraries
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import lightgbm as lgb
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime, timedelta
+import warnings
+warnings.filterwarnings('ignore')
+
+# Set display options
+pd.set_option('display.max_columns', None)
+plt.style.use('seaborn-v0_8-darkgrid')
+# Section 2: Load and Explore Dataset
+# Section 2: Load and Explore Dataset with Visualizations
+
+# Load dataset
+data = pd.read_csv('/kaggle/input/agrisense-dataset/full_price_data.csv')
+
+# Display basic info
+print(f"Dataset shape: {data.shape}")
+print("\nColumns:", data.columns.tolist())
+
+print("\n" + "="*80)
+print("SAMPLE DATA (First 10 rows):")
+print("="*80)
+print(data.head(10))
+
+print("\n" + "="*80)
+print("DATA INFORMATION:")
+print("="*80)
+print(data.info())
+
+print("\n" + "="*80)
+print("MISSING VALUES ANALYSIS:")
+print("="*80)
+missing_values = data.isnull().sum()
+missing_percentage = (missing_values / len(data)) * 100
+missing_df = pd.DataFrame({
+    'Missing Values': missing_values,
+    'Percentage': missing_percentage
+})
+print(missing_df[missing_df['Missing Values'] > 0])
+
+print("\n" + "="*80)
+print("BASIC STATISTICS:")
+print("="*80)
+print(data.describe(include='all'))
+
+# VISUALIZATION 1: Missing Values Heatmap
+plt.figure(figsize=(15, 6))
+sns.heatmap(data.isnull(), cbar=False, cmap='viridis', yticklabels=False)
+plt.title('Missing Values Heatmap', fontsize=14, fontweight='bold')
+plt.xlabel('Columns', fontsize=12)
+plt.ylabel('Rows', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 2: Data Distribution by Category
+plt.figure(figsize=(12, 6))
+category_counts = data['category'].value_counts()
+colors = plt.cm.Set3(np.arange(len(category_counts)))
+bars = plt.bar(category_counts.index, category_counts.values, color=colors, edgecolor='black')
+
+# Add value labels on bars
+for bar in bars:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 50,
+             f'{int(height):,}', ha='center', va='bottom', fontsize=10)
+
+plt.title('Number of Records by Category', fontsize=14, fontweight='bold')
+plt.xlabel('Category', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 3: Market Distribution
+plt.figure(figsize=(14, 6))
+market_counts = data['market'].value_counts()
+colors = plt.cm.Paired(np.arange(len(market_counts)))
+bars = plt.bar(market_counts.index, market_counts.values, color=colors, edgecolor='black')
+
+# Add value labels on bars
+for bar in bars:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 100,
+             f'{int(height):,}', ha='center', va='bottom', fontsize=10)
+
+plt.title('Number of Records by Market', fontsize=14, fontweight='bold')
+plt.xlabel('Market', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 4: Price Distribution (Box Plot)
+plt.figure(figsize=(14, 6))
+sns.boxplot(x='category', y='price_today', data=data, palette='Set2')
+plt.title('Price Distribution by Category', fontsize=14, fontweight='bold')
+plt.xlabel('Category', fontsize=12)
+plt.ylabel('Price Today (LKR)', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 5: Origin Type Distribution
+plt.figure(figsize=(10, 6))
+origin_counts = data['origin_type'].value_counts()
+colors = ['#FF9999', '#66B2FF']
+plt.pie(origin_counts.values, labels=origin_counts.index, autopct='%1.1f%%',
+        colors=colors, startangle=90, shadow=True, explode=(0.05, 0.05))
+plt.title('Distribution by Origin Type', fontsize=14, fontweight='bold')
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 6: Price Type Distribution
+plt.figure(figsize=(10, 6))
+price_type_counts = data['price_type'].value_counts()
+colors = ['#FFD700', '#87CEEB']
+plt.pie(price_type_counts.values, labels=price_type_counts.index, autopct='%1.1f%%',
+        colors=colors, startangle=90, shadow=True, explode=(0.05, 0.05))
+plt.title('Distribution by Price Type', fontsize=14, fontweight='bold')
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 7: Top 20 Items Distribution
+plt.figure(figsize=(16, 8))
+top_items = data['item_standard'].value_counts().head(20)
+colors = plt.cm.tab20c(np.arange(len(top_items)))
+bars = plt.barh(top_items.index, top_items.values, color=colors, edgecolor='black')
+
+# Add value labels on bars
+for bar in bars:
+    width = bar.get_width()
+    plt.text(width + 100, bar.get_y() + bar.get_height()/2.,
+             f'{int(width):,}', ha='left', va='center', fontsize=10)
+
+plt.title('Top 20 Items by Record Count', fontsize=14, fontweight='bold')
+plt.xlabel('Count', fontsize=12)
+plt.ylabel('Item', fontsize=12)
+plt.gca().invert_yaxis()
+plt.grid(axis='x', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 8: Price Correlation Heatmap
+plt.figure(figsize=(8, 6))
+price_columns = ['price_prev', 'price_today']
+correlation_matrix = data[price_columns].corr()
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f',
+            square=True, linewidths=1, cbar_kws={"shrink": 0.8})
+plt.title('Price Correlation Heatmap', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 9: Price Today Distribution
+plt.figure(figsize=(14, 6))
+plt.subplot(1, 2, 1)
+sns.histplot(data['price_today'], bins=50, kde=True, color='skyblue', edgecolor='black')
+plt.title('Distribution of Price Today', fontsize=12, fontweight='bold')
+plt.xlabel('Price Today (LKR)', fontsize=11)
+plt.ylabel('Frequency', fontsize=11)
+plt.grid(alpha=0.3)
+
+plt.subplot(1, 2, 2)
+sns.boxplot(y=data['price_today'], color='lightgreen')
+plt.title('Box Plot of Price Today', fontsize=12, fontweight='bold')
+plt.ylabel('Price Today (LKR)', fontsize=11)
+plt.grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 10: Category vs Price Type Crosstab
+plt.figure(figsize=(12, 8))
+cross_tab = pd.crosstab(data['category'], data['price_type'])
+sns.heatmap(cross_tab, annot=True, fmt='d', cmap='YlOrBr', linewidths=1)
+plt.title('Category vs Price Type Distribution', fontsize=14, fontweight='bold')
+plt.xlabel('Price Type', fontsize=12)
+plt.ylabel('Category', fontsize=12)
+plt.tight_layout()
+plt.show()
+
+# Additional Statistical Analysis
+print("\n" + "="*80)
+print("CATEGORY-WISE ANALYSIS:")
+print("="*80)
+for category in data['category'].unique():
+    cat_data = data[data['category'] == category]
+    print(f"\n{category}:")
+    print(f"  Number of items: {cat_data['item_standard'].nunique()}")
+    print(f"  Average price today: LKR {cat_data['price_today'].mean():.2f}")
+    print(f"  Price range: LKR {cat_data['price_today'].min():.2f} - LKR {cat_data['price_today'].max():.2f}")
+
+print("\n" + "="*80)
+print("MARKET-WISE ANALYSIS:")
+print("="*80)
+for market in data['market'].unique():
+    market_data = data[data['market'] == market]
+    print(f"\n{market}:")
+    print(f"  Records: {len(market_data):,}")
+    print(f"  Categories: {market_data['category'].nunique()}")
+    print(f"  Items: {market_data['item_standard'].nunique()}")
+    print(f"  Avg price: LKR {market_data['price_today'].mean():.2f}")
+
+print("\n" + "="*80)
+print("PRICE ANALYSIS:")
+print("="*80)
+print(f"Overall average price today: LKR {data['price_today'].mean():.2f}")
+print(f"Overall median price today: LKR {data['price_today'].median():.2f}")
+print(f"Price standard deviation: LKR {data['price_today'].std():.2f}")
+print(f"Minimum price: LKR {data['price_today'].min():.2f}")
+print(f"Maximum price: LKR {data['price_today'].max():.2f}")
+print(f"Price range: LKR {data['price_today'].max() - data['price_today'].min():.2f}")
+
+print("\n" + "="*80)
+print("UNIQUE VALUES ANALYSIS:")
+print("="*80)
+for column in ['category', 'origin_type', 'price_type', 'market', 'currency']:
+    unique_vals = data[column].unique()
+    print(f"\n{column}:")
+    print(f"  Count: {len(unique_vals)}")
+    print(f"  Values: {', '.join(unique_vals[:10])}{'...' if len(unique_vals) > 10 else ''}")
+
+# Save dataset info to a text file for reference
+with open('dataset_analysis_summary.txt', 'w') as f:
+    f.write("DATASET ANALYSIS SUMMARY\n")
+    f.write("="*50 + "\n")
+    f.write(f"Dataset shape: {data.shape}\n")
+    f.write(f"Total records: {len(data):,}\n")
+    f.write(f"Total columns: {len(data.columns)}\n")
+    f.write("\n" + "="*50 + "\n")
+    f.write("MISSING VALUES SUMMARY:\n")
+    f.write(missing_df[missing_df['Missing Values'] > 0].to_string())
+    f.write("\n\n" + "="*50 + "\n")
+    f.write("CATEGORY DISTRIBUTION:\n")
+    f.write(str(data['category'].value_counts()))
+
+print("\n" + "="*80)
+print("DATASET ANALYSIS COMPLETE")
+print("="*80)
+print(f"✓ Loaded {len(data):,} records with {len(data.columns)} columns")
+print(f"✓ Generated 10 comprehensive visualizations")
+print(f"✓ Analysis summary saved to 'dataset_analysis_summary.txt'")
+# Section 3: Data Preprocessing
+# Section 3: Data Preprocessing with Visualizations
+
+print("="*80)
+print("DATA PREPROCESSING WITH VISUALIZATIONS")
+print("="*80)
+
+# 1. DATE CONVERSION AND VALIDATION
+print("\n1. DATE COLUMNS PROCESSING:")
+print("-"*40)
+
+# Convert date columns with error handling
+data['report_date'] = pd.to_datetime(data['report_date'], format='%m/%d/%Y', errors='coerce')
+data['source_doc_date'] = pd.to_datetime(data['source_doc_date'], format='%m/%d/%Y', errors='coerce')
+data['ingested_at'] = pd.to_datetime(data['ingested_at'], errors='coerce')
+
+# Check for invalid dates
+invalid_dates = data['report_date'].isnull().sum()
+date_range_start = data['report_date'].min()
+date_range_end = data['report_date'].max()
+print(f"✓ Converted date columns")
+print(f"  - Invalid dates found: {invalid_dates}")
+print(f"  - Date range: {date_range_start} to {date_range_end}")
+
+# VISUALIZATION 1: Date Distribution
+plt.figure(figsize=(14, 6))
+plt.subplot(1, 2, 1)
+
+# Convert to period for monthly grouping
+monthly_counts = data['report_date'].dt.to_period('M').value_counts().sort_index()
+# Convert period to string for plotting
+monthly_labels = monthly_counts.index.astype(str)
+plt.bar(range(len(monthly_labels)), monthly_counts.values, color='skyblue', edgecolor='black', alpha=0.8)
+plt.title('Records Distribution by Month', fontsize=12, fontweight='bold')
+plt.xlabel('Month-Year', fontsize=10)
+plt.ylabel('Number of Records', fontsize=10)
+plt.xticks(range(len(monthly_labels))[::3], monthly_labels[::3], rotation=45, ha='right', fontsize=8)
+plt.grid(axis='y', alpha=0.3)
+
+plt.subplot(1, 2, 2)
+yearly_counts = data['report_date'].dt.year.value_counts().sort_index()
+plt.bar(yearly_counts.index.astype(str), yearly_counts.values, color='lightgreen', edgecolor='black', alpha=0.8)
+plt.title('Records Distribution by Year', fontsize=12, fontweight='bold')
+plt.xlabel('Year', fontsize=10)
+plt.ylabel('Number of Records', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 2. FILTER LOCAL ITEMS FOR CULTIVATION TARGETING
+print("\n2. FILTERING LOCAL ITEMS:")
+print("-"*40)
+
+# Check current distribution
+print(f"Original data shape: {data.shape}")
+print(f"\nOrigin Type Distribution:")
+origin_counts = data['origin_type'].value_counts()
+print(origin_counts)
+
+# VISUALIZATION 2: Origin Type Distribution
+plt.figure(figsize=(10, 6))
+colors = ['#4CAF50', '#FF9800']  # Green for Local, Orange for Imported
+plt.pie(origin_counts.values, labels=origin_counts.index, autopct='%1.1f%%',
+        colors=colors, startangle=90, shadow=True, explode=(0.05, 0.05),
+        textprops={'fontsize': 11})
+plt.title('Distribution by Origin Type', fontsize=14, fontweight='bold')
+plt.axis('equal')
+plt.tight_layout()
+plt.show()
+
+# Filter only LOCAL items
+local_data = data[data['origin_type'] == 'Local'].copy()
+removed_imported = len(data) - len(local_data)
+print(f"\n✓ Filtered Local items: {len(local_data):,} records")
+print(f"  - Removed {removed_imported:,} Imported items")
+
+# 3. CREATE TIME-BASED FEATURES
+print("\n3. CREATING TIME-BASED FEATURES:")
+print("-"*40)
+
+# Create comprehensive time features
+local_data['year'] = local_data['report_date'].dt.year
+local_data['month'] = local_data['report_date'].dt.month
+local_data['day'] = local_data['report_date'].dt.day
+local_data['week'] = local_data['report_date'].dt.isocalendar().week
+local_data['day_of_week'] = local_data['report_date'].dt.dayofweek
+local_data['quarter'] = local_data['report_date'].dt.quarter
+local_data['is_month_start'] = local_data['report_date'].dt.is_month_start.astype(int)
+local_data['is_month_end'] = local_data['report_date'].dt.is_month_end.astype(int)
+
+# Create week_id for weekly analysis
+local_data['week_id'] = local_data['year'].astype(str) + '_W' + local_data['week'].astype(str).str.zfill(2)
+local_data['month_year'] = local_data['report_date'].dt.to_period('M').astype(str)
+
+year_min, year_max = local_data['year'].min(), local_data['year'].max()
+week_min, week_max = local_data['week'].min(), local_data['week'].max()
+unique_weeks = local_data['week_id'].nunique()
+
+print(f"✓ Created time features:")
+print(f"  - Year range: {year_min} to {year_max}")
+print(f"  - Week range: Week {week_min} to Week {week_max}")
+print(f"  - Total unique weeks: {unique_weeks}")
+
+# VISUALIZATION 3: Time Features Distribution
+plt.figure(figsize=(15, 10))
+
+# Subplot 1: Day of Week Distribution
+plt.subplot(2, 3, 1)
+dow_counts = local_data['day_of_week'].value_counts().sort_index()
+dow_labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+plt.bar(dow_labels, dow_counts.values, color='lightblue', edgecolor='black')
+plt.title('Records by Day of Week', fontsize=11, fontweight='bold')
+plt.xlabel('Day', fontsize=10)
+plt.ylabel('Count', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 2: Month Distribution
+plt.subplot(2, 3, 2)
+month_counts = local_data['month'].value_counts().sort_index()
+month_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+plt.bar(month_labels, month_counts.values, color='lightgreen', edgecolor='black')
+plt.title('Records by Month', fontsize=11, fontweight='bold')
+plt.xlabel('Month', fontsize=10)
+plt.ylabel('Count', fontsize=10)
+plt.xticks(rotation=45)
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 3: Quarter Distribution
+plt.subplot(2, 3, 3)
+quarter_counts = local_data['quarter'].value_counts().sort_index()
+colors = ['#FF9999', '#66B2FF', '#99FF99', '#FFCC99']
+plt.pie(quarter_counts.values, labels=[f'Q{q}' for q in quarter_counts.index],
+        autopct='%1.1f%%', colors=colors, startangle=90)
+plt.title('Records by Quarter', fontsize=11, fontweight='bold')
+
+# Subplot 4: Month Start/End Distribution
+plt.subplot(2, 3, 4)
+month_start_end = local_data[['is_month_start', 'is_month_end']].sum()
+plt.bar(['Month Start', 'Month End'], month_start_end.values, 
+        color=['#FF6B6B', '#4ECDC4'], edgecolor='black')
+plt.title('Month Start/End Records', fontsize=11, fontweight='bold')
+plt.ylabel('Count', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 5: Year Distribution
+plt.subplot(2, 3, 5)
+year_counts = local_data['year'].value_counts().sort_index()
+plt.bar(year_counts.index.astype(str), year_counts.values, 
+        color='orange', edgecolor='black', alpha=0.8)
+plt.title('Records by Year', fontsize=11, fontweight='bold')
+plt.xlabel('Year', fontsize=10)
+plt.ylabel('Count', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 6: Week Distribution (Top 20)
+plt.subplot(2, 3, 6)
+week_counts = local_data['week'].value_counts().head(20).sort_index()
+plt.bar(week_counts.index.astype(str), week_counts.values, 
+        color='purple', edgecolor='black', alpha=0.7)
+plt.title('Top 20 Weeks by Record Count', fontsize=11, fontweight='bold')
+plt.xlabel('Week Number', fontsize=9)
+plt.ylabel('Count', fontsize=10)
+plt.xticks(rotation=45)
+plt.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 4. HANDLE MISSING VALUES
+print("\n4. HANDLING MISSING VALUES:")
+print("-"*40)
+
+# Check missing values before handling
+missing_before = local_data.isnull().sum()
+missing_columns = missing_before[missing_before > 0]
+
+if len(missing_columns) > 0:
+    print(f"Missing values found in {len(missing_columns)} column(s):")
+    for col, count in missing_columns.items():
+        percentage = (count / len(local_data)) * 100
+        print(f"  - {col}: {count:,} ({percentage:.2f}%)")
+else:
+    print("No missing values found in numeric columns.")
+
+# VISUALIZATION 4: Missing Values Heatmap
+plt.figure(figsize=(12, 8))
+missing_matrix = local_data.isnull()
+sns.heatmap(missing_matrix, cbar=True, cmap='Reds', 
+            yticklabels=False, cbar_kws={'label': 'Missing'})
+plt.title('Missing Values Heatmap (Local Data)', fontsize=14, fontweight='bold')
+plt.xlabel('Columns', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+# Handle special_notes (categorical)
+local_data['special_notes'].fillna('No Notes', inplace=True)
+print(f"✓ Filled missing 'special_notes' with 'No Notes'")
+
+# Check for any remaining missing values in numeric columns
+numeric_cols = local_data.select_dtypes(include=[np.number]).columns
+missing_numeric = local_data[numeric_cols].isnull().sum().sum()
+print(f"✓ Missing values in numeric columns: {missing_numeric}")
+
+# 5. FILTER RELEVANT CATEGORIES FOR CULTIVATION
+print("\n5. FILTERING CULTIVATION CATEGORIES:")
+print("-"*40)
+
+# Original categories distribution
+print(f"Original categories in local data:")
+category_counts_before = local_data['category'].value_counts()
+print(category_counts_before)
+
+# VISUALIZATION 5: Category Distribution Before Filtering
+plt.figure(figsize=(12, 6))
+colors_before = ['#FF9999', '#66B2FF', '#99FF99', '#FFCC99', '#FFD700']
+bars_before = plt.bar(category_counts_before.index, category_counts_before.values, 
+                      color=colors_before, edgecolor='black', alpha=0.8)
+
+for bar in bars_before:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 100,
+             f'{int(height):,}', ha='center', va='bottom', fontsize=10)
+
+plt.title('Category Distribution (Before Filtering)', fontsize=14, fontweight='bold')
+plt.xlabel('Category', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.xticks(rotation=0)
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# Define cultivation categories
+cultivation_categories = ['Vegetables', 'Rice', 'Fruits']
+print(f"\nCultivation categories selected: {cultivation_categories}")
+
+# Filter data
+cultivation_data = local_data[local_data['category'].isin(cultivation_categories)].copy()
+removed_categories = set(local_data['category'].unique()) - set(cultivation_categories)
+records_removed = len(local_data) - len(cultivation_data)
+
+print(f"\n✓ Filtered cultivation data: {len(cultivation_data):,} records")
+print(f"  - Removed categories: {removed_categories}")
+print(f"  - Records removed: {records_removed:,}")
+
+# VISUALIZATION 6: Category Distribution After Filtering
+plt.figure(figsize=(12, 6))
+category_counts_after = cultivation_data['category'].value_counts()
+colors_after = ['#4CAF50', '#2196F3', '#FF9800']  # Green, Blue, Orange
+
+bars_after = plt.bar(category_counts_after.index, category_counts_after.values, 
+                     color=colors_after, edgecolor='black', alpha=0.8)
+
+for bar in bars_after:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 50,
+             f'{int(height):,}', ha='center', va='bottom', fontsize=10)
+
+plt.title('Category Distribution (After Filtering)', fontsize=14, fontweight='bold')
+plt.xlabel('Category', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.xticks(rotation=0)
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# 6. DATA CLEANING AND STANDARDIZATION
+print("\n6. DATA CLEANING AND STANDARDIZATION:")
+print("-"*40)
+
+# Clean item names (remove extra spaces, standardize)
+cultivation_data['item_standard_clean'] = cultivation_data['item_standard'].str.strip()
+cultivation_data['item_raw_clean'] = cultivation_data['item_raw'].str.strip()
+
+# Check for duplicates in item names
+item_variations = cultivation_data.groupby('item_standard_clean')['item_raw_clean'].nunique()
+variations_count = sum(item_variations > 1)
+
+if variations_count > 0:
+    print(f"✓ Found {variations_count} items with multiple raw name variations")
+    print("  Standardizing item names...")
+    
+    # Create mapping for item standardization
+    item_mapping = {}
+    for item in cultivation_data['item_standard_clean'].unique():
+        variations = cultivation_data[cultivation_data['item_standard_clean'] == item]['item_raw_clean'].unique()
+        if len(variations) > 1:
+            item_mapping[item] = variations
+            print(f"    - {item}: {len(variations)} variations")
+    
+    # Use only the standard name
+    cultivation_data['item_clean'] = cultivation_data['item_standard_clean']
+    
+    # VISUALIZATION 7: Item Name Variations
+    plt.figure(figsize=(14, 6))
+    items_with_variations = {k: len(v) for k, v in item_mapping.items()}
+    plt.bar(range(len(items_with_variations)), list(items_with_variations.values()), 
+            color='lightcoral', edgecolor='black')
+    plt.xticks(range(len(items_with_variations)), list(items_with_variations.keys()), 
+               rotation=45, ha='right', fontsize=9)
+    plt.title('Items with Multiple Name Variations', fontsize=14, fontweight='bold')
+    plt.xlabel('Item Standard Name', fontsize=12)
+    plt.ylabel('Number of Variations', fontsize=12)
+    plt.grid(axis='y', alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+    
+else:
+    print("✓ All items have consistent naming")
+    cultivation_data['item_clean'] = cultivation_data['item_standard_clean']
+
+# Standardize market names
+cultivation_data['market_clean'] = cultivation_data['market'].str.strip()
+
+# 7. CREATE CULTIVATION-SPECIFIC FEATURES
+print("\n7. CREATING CULTIVATION-SPECIFIC FEATURES:")
+print("-"*40)
+
+# Define crop types based on item_clean (using exact names from data)
+vegetable_items = ['Beans', 'Carrot', 'Cabbage', 'Tomato', 'Brinjal', 'Pumpkin', 
+                   'Snake gourd', 'Green Chilli', 'Lime']
+rice_items = ['Samba', 'Nadu', 'Kekulu']
+fruit_items = ['Banana', 'Papaw', 'Pineapple', 'Apple', 'Orange']
+
+# Create crop type column
+def get_crop_type(item):
+    if item in vegetable_items:
+        return 'Vegetable'
+    elif item in rice_items:
+        return 'Rice'
+    elif item in fruit_items:
+        return 'Fruit'
+    else:
+        return 'Other'
+
+cultivation_data['crop_type'] = cultivation_data['item_clean'].apply(get_crop_type)
+crop_type_counts = cultivation_data['crop_type'].value_counts()
+
+print(f"✓ Created crop type classification:")
+print(crop_type_counts)
+
+# VISUALIZATION 8: Crop Type Distribution
+plt.figure(figsize=(10, 8))
+plt.subplot(2, 1, 1)
+colors_crop = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0']
+bars_crop = plt.bar(crop_type_counts.index, crop_type_counts.values, 
+                    color=colors_crop[:len(crop_type_counts)], edgecolor='black', alpha=0.8)
+
+for bar in bars_crop:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 100,
+             f'{int(height):,}', ha='center', va='bottom', fontsize=10)
+
+plt.title('Crop Type Distribution', fontsize=14, fontweight='bold')
+plt.xlabel('Crop Type', fontsize=12)
+plt.ylabel('Count', fontsize=12)
+plt.grid(axis='y', alpha=0.3)
+
+plt.subplot(2, 1, 2)
+# Pie chart for crop type - FIXED: Ensure explode length matches data length
+explode_values = (0.05, 0.05, 0.05)[:len(crop_type_counts)]  # Adjust based on actual count
+plt.pie(crop_type_counts.values, labels=crop_type_counts.index, autopct='%1.1f%%',
+        colors=colors_crop[:len(crop_type_counts)], startangle=90, shadow=True, 
+        explode=explode_values, textprops={'fontsize': 11})
+plt.title('Crop Type Percentage Distribution', fontsize=12, fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# 8. PRICE DATA QUALITY CHECK
+print("\n8. PRICE DATA QUALITY CHECK:")
+print("-"*40)
+
+# Check for price anomalies
+price_stats = cultivation_data['price_today'].describe()
+price_mean = price_stats['mean']
+price_median = price_stats['50%']
+price_min = price_stats['min']
+price_max = price_stats['max']
+price_std = price_stats['std']
+
+print(f"Price statistics:")
+print(f"  - Mean: LKR {price_mean:.2f}")
+print(f"  - Median: LKR {price_median:.2f}")
+print(f"  - Min: LKR {price_min:.2f}")
+print(f"  - Max: LKR {price_max:.2f}")
+print(f"  - Std Dev: LKR {price_std:.2f}")
+
+# Check for unrealistic prices (outside reasonable range)
+price_lower_bound = 10  # Minimum reasonable price
+price_upper_bound = 1000  # Maximum reasonable price
+
+price_anomalies = cultivation_data[
+    (cultivation_data['price_today'] < price_lower_bound) | 
+    (cultivation_data['price_today'] > price_upper_bound)
+]
+anomaly_count = len(price_anomalies)
+print(f"✓ Price anomalies (outside LKR {price_lower_bound}-{price_upper_bound}): {anomaly_count} records")
+
+# VISUALIZATION 9: Price Distribution Analysis
+plt.figure(figsize=(15, 10))
+
+# Subplot 1: Price Distribution Histogram
+plt.subplot(2, 3, 1)
+plt.hist(cultivation_data['price_today'], bins=50, color='skyblue', 
+         edgecolor='black', alpha=0.7)
+plt.axvline(price_mean, color='red', linestyle='--', linewidth=2, label=f'Mean: LKR {price_mean:.0f}')
+plt.axvline(price_median, color='green', linestyle='--', linewidth=2, label=f'Median: LKR {price_median:.0f}')
+plt.title('Price Distribution Histogram', fontsize=12, fontweight='bold')
+plt.xlabel('Price Today (LKR)', fontsize=10)
+plt.ylabel('Frequency', fontsize=10)
+plt.legend()
+plt.grid(alpha=0.3)
+
+# Subplot 2: Price Box Plot
+plt.subplot(2, 3, 2)
+sns.boxplot(y=cultivation_data['price_today'], color='lightgreen')
+plt.title('Price Box Plot', fontsize=12, fontweight='bold')
+plt.ylabel('Price Today (LKR)', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 3: Price by Category
+plt.subplot(2, 3, 3)
+sns.boxplot(x='category', y='price_today', data=cultivation_data, palette='Set2')
+plt.title('Price Distribution by Category', fontsize=12, fontweight='bold')
+plt.xlabel('Category', fontsize=10)
+plt.ylabel('Price Today (LKR)', fontsize=10)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 4: Price by Crop Type
+plt.subplot(2, 3, 4)
+sns.boxplot(x='crop_type', y='price_today', data=cultivation_data, palette='Set3')
+plt.title('Price Distribution by Crop Type', fontsize=12, fontweight='bold')
+plt.xlabel('Crop Type', fontsize=10)
+plt.ylabel('Price Today (LKR)', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+# Subplot 5: Price Trend Over Time
+plt.subplot(2, 3, 5)
+monthly_avg_price = cultivation_data.groupby('month_year')['price_today'].mean()
+# Sort by date
+monthly_avg_price = monthly_avg_price.sort_index()
+plt.plot(range(len(monthly_avg_price)), monthly_avg_price.values, marker='o', 
+         color='blue', linewidth=2, markersize=4)
+plt.title('Monthly Average Price Trend', fontsize=12, fontweight='bold')
+plt.xlabel('Time Sequence', fontsize=10)
+plt.ylabel('Average Price (LKR)', fontsize=10)
+plt.xticks([])
+plt.grid(alpha=0.3)
+
+# Subplot 6: Price Anomalies
+plt.subplot(2, 3, 6)
+normal_prices = len(cultivation_data) - anomaly_count
+labels = ['Normal Prices', 'Price Anomalies']
+sizes = [normal_prices, anomaly_count]
+colors_anomaly = ['#66BB6A', '#EF5350']
+explode = (0, 0.1) if anomaly_count > 0 else (0, 0)
+plt.pie(sizes, labels=labels, autopct='%1.1f%%', colors=colors_anomaly,
+        explode=explode, startangle=90, shadow=True)
+plt.title('Price Anomaly Detection', fontsize=12, fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# 9. UNIT STANDARDIZATION
+print("\n9. UNIT STANDARDIZATION:")
+print("-"*40)
+
+# Check unit variations
+unit_counts = cultivation_data['unit_std'].value_counts()
+print(f"Unit variations found:")
+print(unit_counts)
+
+# Create standardized unit flag
+cultivation_data['is_per_kg'] = cultivation_data['unit_std'].str.contains('Kg', case=False, na=False)
+cultivation_data['is_per_ltr'] = cultivation_data['unit_std'].str.contains('Ltr', case=False, na=False)
+cultivation_data['is_per_each'] = cultivation_data['unit_std'].str.contains('Each', case=False, na=False)
+cultivation_data['is_per_nut'] = cultivation_data['unit_std'].str.contains('Nut', case=False, na=False)
+
+unit_counts_summary = {
+    'Per Kg': cultivation_data['is_per_kg'].sum(),
+    'Per Liter': cultivation_data['is_per_ltr'].sum(),
+    'Per Each': cultivation_data['is_per_each'].sum(),
+    'Per Nut': cultivation_data['is_per_nut'].sum()
+}
+
+print(f"✓ Created unit flags:")
+for unit_type, count in unit_counts_summary.items():
+    print(f"  - {unit_type}: {count:,}")
+
+# VISUALIZATION 10: Unit Distribution
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+# Original unit distribution
+bars_unit = plt.bar(unit_counts.index, unit_counts.values, 
+                    color=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'], 
+                    edgecolor='black', alpha=0.8)
+for bar in bars_unit:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2., height + 50,
+             f'{int(height):,}', ha='center', va='bottom', fontsize=9)
+plt.title('Original Unit Distribution', fontsize=12, fontweight='bold')
+plt.xlabel('Unit Type', fontsize=10)
+plt.ylabel('Count', fontsize=10)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', alpha=0.3)
+
+plt.subplot(1, 2, 2)
+# Standardized unit flags
+plt.bar(unit_counts_summary.keys(), unit_counts_summary.values(), 
+        color=['#FF9800', '#2196F3', '#4CAF50', '#9C27B0'], 
+        edgecolor='black', alpha=0.8)
+for i, (unit_type, count) in enumerate(unit_counts_summary.items()):
+    plt.text(i, count + 50, f'{int(count):,}', ha='center', va='bottom', fontsize=9)
+plt.title('Standardized Unit Flags', fontsize=12, fontweight='bold')
+plt.xlabel('Unit Type', fontsize=10)
+plt.ylabel('Count', fontsize=10)
+plt.xticks(rotation=45, ha='right')
+plt.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 10. FINAL DATASET SUMMARY
+print("\n10. FINAL DATASET SUMMARY:")
+print("-"*40)
+
+final_shape = cultivation_data.shape
+final_columns = len(cultivation_data.columns)
+time_range_start = cultivation_data['report_date'].min()
+time_range_end = cultivation_data['report_date'].max()
+markets = cultivation_data['market_clean'].nunique()
+market_list = ', '.join(cultivation_data['market_clean'].unique())
+items = cultivation_data['item_clean'].nunique()
+
+print(f"✓ Final cultivation dataset shape: {final_shape}")
+print(f"✓ Columns: {final_columns}")
+print(f"✓ Time range: {time_range_start} to {time_range_end}")
+print(f"✓ Markets: {markets} ({market_list})")
+print(f"✓ Items: {items} unique items")
+
+# Category distribution
+category_dist = cultivation_data['category'].value_counts()
+print(f"\n✓ Category distribution:")
+for cat, count in category_dist.items():
+    percentage = (count / len(cultivation_data)) * 100
+    print(f"  - {cat}: {count:,} ({percentage:.1f}%)")
+
+# Crop type distribution
+crop_dist = cultivation_data['crop_type'].value_counts()
+print(f"\n✓ Crop type distribution:")
+for crop, count in crop_dist.items():
+    percentage = (count / len(cultivation_data)) * 100
+    print(f"  - {crop}: {count:,} ({percentage:.1f}%)")
+
+# Price type distribution
+price_dist = cultivation_data['price_type'].value_counts()
+print(f"\n✓ Price type distribution:")
+for ptype, count in price_dist.items():
+    percentage = (count / len(cultivation_data)) * 100
+    print(f"  - {ptype}: {count:,} ({percentage:.1f}%)")
+
+# VISUALIZATION 11: Final Dataset Summary
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+# Plot 1: Category Distribution
+axes[0, 0].bar(category_dist.index, category_dist.values, 
+               color=['#4CAF50', '#2196F3', '#FF9800'], edgecolor='black')
+axes[0, 0].set_title('Final Category Distribution', fontsize=12, fontweight='bold')
+axes[0, 0].set_xlabel('Category', fontsize=10)
+axes[0, 0].set_ylabel('Count', fontsize=10)
+axes[0, 0].grid(axis='y', alpha=0.3)
+
+# Plot 2: Crop Type Distribution
+axes[0, 1].bar(crop_dist.index, crop_dist.values, 
+               color=['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'], edgecolor='black')
+axes[0, 1].set_title('Crop Type Distribution', fontsize=12, fontweight='bold')
+axes[0, 1].set_xlabel('Crop Type', fontsize=10)
+axes[0, 1].set_ylabel('Count', fontsize=10)
+axes[0, 1].grid(axis='y', alpha=0.3)
+
+# Plot 3: Price Type Distribution
+axes[1, 0].pie(price_dist.values, labels=price_dist.index, autopct='%1.1f%%',
+               colors=['#FF9999', '#66B2FF'], startangle=90)
+axes[1, 0].set_title('Price Type Distribution', fontsize=12, fontweight='bold')
+
+# Plot 4: Market Distribution
+market_dist = cultivation_data['market_clean'].value_counts()
+axes[1, 1].bar(market_dist.index, market_dist.values, 
+               color=plt.cm.Set3(np.arange(len(market_dist))), edgecolor='black')
+axes[1, 1].set_title('Market Distribution', fontsize=12, fontweight='bold')
+axes[1, 1].set_xlabel('Market', fontsize=10)
+axes[1, 1].set_ylabel('Count', fontsize=10)
+axes[1, 1].tick_params(axis='x', rotation=45)
+axes[1, 1].grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 11. SAVE PROCESSED DATA
+print("\n11. SAVING PROCESSED DATA:")
+print("-"*40)
+
+# Save the processed data
+cultivation_data.to_csv('cultivation_data_processed.csv', index=False)
+print(f"✓ Saved processed data to 'cultivation_data_processed.csv'")
+
+# Save a summary file
+with open('preprocessing_summary.txt', 'w') as f:
+    f.write("DATA PREPROCESSING SUMMARY\n")
+    f.write("="*50 + "\n\n")
+    f.write(f"Original dataset shape: {data.shape}\n")
+    f.write(f"After filtering local items: {len(local_data):,}\n")
+    f.write(f"Final cultivation dataset: {len(cultivation_data):,}\n")
+    f.write(f"Data retention: {(len(cultivation_data)/len(data)*100):.1f}%\n\n")
+    
+    f.write("CATEGORY DISTRIBUTION:\n")
+    for cat, count in category_dist.items():
+        f.write(f"  - {cat}: {count:,}\n")
+    
+    f.write("\nTIME RANGE:\n")
+    f.write(f"  Start: {cultivation_data['report_date'].min()}\n")
+    f.write(f"  End: {cultivation_data['report_date'].max()}\n")
+    f.write(f"  Duration: {(cultivation_data['report_date'].max() - cultivation_data['report_date'].min()).days} days\n")
+
+print(f"✓ Saved preprocessing summary to 'preprocessing_summary.txt'")
+
+print("\n" + "="*80)
+print("DATA PREPROCESSING COMPLETE!")
+print("="*80)
+print(f"✓ Processed {len(cultivation_data):,} cultivation records")
+print(f"✓ Generated 11 comprehensive visualizations")
+print(f"✓ Cleaned and standardized all features")
+print(f"✓ Ready for feature engineering and model training")
+
+# VISUALIZATION 12: Preprocessing Pipeline Summary
+fig, ax = plt.subplots(figsize=(10, 6))
+stages = ['Original Data', 'Local Items', 'Cultivation Categories', 'Final Dataset']
+counts = [len(data), len(local_data), len(cultivation_data), len(cultivation_data)]
+colors_stages = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
+
+bars = ax.bar(stages, counts, color=colors_stages, edgecolor='black', alpha=0.8)
+
+# Add value labels
+for bar, count in zip(bars, counts):
+    height = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2., height + 1000,
+            f'{count:,}', ha='center', va='bottom', fontsize=10)
+
+# Add percentage labels
+for i, count in enumerate(counts[1:], 1):
+    percentage = (count / counts[i-1]) * 100
+    ax.text(i-0.5, counts[i] + 2000, f'{percentage:.1f}%', 
+            ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+ax.set_title('Preprocessing Pipeline: Data Reduction', fontsize=14, fontweight='bold')
+ax.set_xlabel('Processing Stage', fontsize=12)
+ax.set_ylabel('Number of Records', fontsize=12)
+ax.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+# Section 4: Feature Engineering
+# Section 4: Feature Engineering
+
+print("="*80)
+print("FEATURE ENGINEERING")
+print("="*80)
+
+# Make a copy of the data for feature engineering
+feature_data = cultivation_data.copy()
+
+print(f"Starting with {len(feature_data):,} records")
+print(f"Initial columns: {len(feature_data.columns)}")
+
+# 1. ENCODING CATEGORICAL VARIABLES
+print("\n1. ENCODING CATEGORICAL VARIABLES:")
+print("-"*40)
+
+# Create label encoders for categorical variables
+label_encoders = {}
+
+categorical_columns = ['market_clean', 'category', 'price_type', 'item_clean', 'crop_type']
+
+for col in categorical_columns:
+    le = LabelEncoder()
+    feature_data[f'{col}_encoded'] = le.fit_transform(feature_data[col])
+    label_encoders[col] = le
+    print(f"✓ Encoded {col}: {len(le.classes_)} unique values")
+
+# VISUALIZATION 1: Encoded Variables Distribution
+plt.figure(figsize=(15, 10))
+for i, col in enumerate(categorical_columns, 1):
+    plt.subplot(2, 3, i)
+    encoded_col = feature_data[f'{col}_encoded'].value_counts().sort_index()
+    plt.bar(range(len(encoded_col)), encoded_col.values, color=plt.cm.tab20c(i/len(categorical_columns)), 
+            edgecolor='black', alpha=0.8)
+    plt.title(f'{col} Encoded Distribution', fontsize=11, fontweight='bold')
+    plt.xlabel('Encoded Value', fontsize=9)
+    plt.ylabel('Count', fontsize=9)
+    plt.grid(axis='y', alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 2. CREATE PRICE-BASED FEATURES
+print("\n2. CREATING PRICE-BASED FEATURES:")
+print("-"*40)
+
+# Sort data by item, market, and date for time-based calculations
+feature_data = feature_data.sort_values(['item_clean', 'market_clean', 'report_date']).reset_index(drop=True)
+
+# Create rolling window features for each item-market combination
+price_features = pd.DataFrame()
+
+# Get unique combinations of item and market
+unique_combinations = feature_data[['item_clean', 'market_clean']].drop_duplicates()
+print(f"Creating features for {len(unique_combinations)} unique item-market combinations")
+
+# Initialize lists to store features
+all_features = []
+
+# Process each combination
+for idx, (item, market) in enumerate(unique_combinations.values):
+    # Filter data for this combination
+    mask = (feature_data['item_clean'] == item) & (feature_data['market_clean'] == market)
+    subset = feature_data[mask].copy()
+    
+    if len(subset) > 1:  # Need at least 2 records for calculations
+        # Rolling averages
+        subset['price_rolling_avg_3'] = subset['price_today'].rolling(window=3, min_periods=1).mean()
+        subset['price_rolling_avg_5'] = subset['price_today'].rolling(window=5, min_periods=1).mean()
+        subset['price_rolling_avg_7'] = subset['price_today'].rolling(window=7, min_periods=1).mean()
+        
+        # Rolling standard deviations (volatility)
+        subset['price_rolling_std_5'] = subset['price_today'].rolling(window=5, min_periods=1).std()
+        subset['price_rolling_std_10'] = subset['price_today'].rolling(window=10, min_periods=1).std()
+        
+        # Price momentum (percentage change)
+        subset['price_momentum_1'] = subset['price_today'].pct_change(periods=1)
+        subset['price_momentum_3'] = subset['price_today'].pct_change(periods=3)
+        subset['price_momentum_7'] = subset['price_today'].pct_change(periods=7)
+        
+        # Price range (high-low)
+        subset['price_range_5'] = subset['price_today'].rolling(window=5, min_periods=1).max() - \
+                                 subset['price_today'].rolling(window=5, min_periods=1).min()
+        
+        # Price position within range
+        rolling_min = subset['price_today'].rolling(window=5, min_periods=1).min()
+        rolling_max = subset['price_today'].rolling(window=5, min_periods=1).max()
+        subset['price_position_5'] = (subset['price_today'] - rolling_min) / (rolling_max - rolling_min + 1e-10)
+        
+        # Lag features
+        subset['price_lag_1'] = subset['price_today'].shift(1)
+        subset['price_lag_3'] = subset['price_today'].shift(3)
+        subset['price_lag_7'] = subset['price_today'].shift(7)
+        
+        # Trend indicators
+        subset['price_trend_5'] = subset['price_today'].rolling(window=5, min_periods=1).apply(
+            lambda x: np.polyfit(range(len(x)), x, 1)[0] if len(x) > 1 else 0
+        )
+        
+        # Seasonal decomposition (simplified)
+        subset['price_seasonal_7'] = subset['price_today'].rolling(window=7, min_periods=1).mean() - \
+                                    subset['price_today'].rolling(window=30, min_periods=1).mean()
+    
+    all_features.append(subset)
+    
+    # Show progress
+    if (idx + 1) % 50 == 0:
+        print(f"  Processed {idx + 1}/{len(unique_combinations)} combinations")
+
+# Combine all subsets
+feature_data = pd.concat(all_features, ignore_index=True)
+
+print(f"✓ Created price-based features:")
+print(f"  - Rolling averages (3, 5, 7 days)")
+print(f"  - Volatility measures (5, 10 days)")
+print(f"  - Momentum indicators (1, 3, 7 days)")
+print(f"  - Range and position features")
+print(f"  - Lag features (1, 3, 7 days)")
+print(f"  - Trend and seasonal indicators")
+
+# 3. CREATE MARKET-BASED FEATURES
+print("\n3. CREATING MARKET-BASED FEATURES:")
+print("-"*40)
+
+# Market price spread (difference between markets for same item on same day)
+market_spread_features = []
+
+# For each date and item, calculate price spread across markets
+for date in feature_data['report_date'].unique():
+    date_data = feature_data[feature_data['report_date'] == date]
+    
+    for item in date_data['item_clean'].unique():
+        item_data = date_data[date_data['item_clean'] == item]
+        
+        if len(item_data) > 1:  # Need at least 2 markets
+            max_price = item_data['price_today'].max()
+            min_price = item_data['price_today'].min()
+            avg_price = item_data['price_today'].mean()
+            price_std = item_data['price_today'].std()
+            
+            market_spread_features.append({
+                'report_date': date,
+                'item_clean': item,
+                'market_price_max': max_price,
+                'market_price_min': min_price,
+                'market_price_avg': avg_price,
+                'market_price_std': price_std,
+                'market_price_spread': max_price - min_price,
+                'market_price_cv': price_std / avg_price if avg_price > 0 else 0
+            })
+
+market_spread_df = pd.DataFrame(market_spread_features)
+
+# Merge market spread features back to main dataframe
+feature_data = pd.merge(feature_data, market_spread_df, 
+                        on=['report_date', 'item_clean'], 
+                        how='left', suffixes=('', '_market'))
+
+print(f"✓ Created market-based features:")
+print(f"  - Market price spread (max-min difference)")
+print(f"  - Average price across markets")
+print(f"  - Price standard deviation across markets")
+print(f"  - Coefficient of variation")
+
+# 4. CREATE CULTIVATION-SPECIFIC FEATURES
+print("\n4. CREATING CULTIVATION-SPECIFIC FEATURES:")
+print("-"*40)
+
+# Define growing season features (for Sri Lanka)
+# Yala season: April-September, Maha season: October-March
+feature_data['season'] = feature_data['month'].apply(
+    lambda x: 'Yala' if 4 <= x <= 9 else 'Maha'
+)
+feature_data['season_encoded'] = feature_data['season'].map({'Yala': 0, 'Maha': 1})
+
+# Growing degree days approximation (simplified)
+def estimate_gdd(month):
+    # Simplified GDD based on month (higher in warmer months)
+    gdd_map = {
+        1: 250, 2: 260, 3: 270, 4: 280, 5: 290, 6: 290,
+        7: 285, 8: 280, 9: 275, 10: 270, 11: 260, 12: 255
+    }
+    return gdd_map.get(month, 270)
+
+feature_data['gdd_estimation'] = feature_data['month'].apply(estimate_gdd)
+
+# Rainfall pattern (monsoon seasons)
+def rainfall_pattern(month):
+    if month in [10, 11, 12, 1]:  # Northeast monsoon
+        return 'High'
+    elif month in [4, 5, 9]:  # Inter-monsoon
+        return 'Medium'
+    else:  # Southwest monsoon or dry period
+        return 'Low'
+
+feature_data['rainfall_pattern'] = feature_data['month'].apply(rainfall_pattern)
+feature_data['rainfall_encoded'] = feature_data['rainfall_pattern'].map({'Low': 0, 'Medium': 1, 'High': 2})
+
+# Crop growth cycle features
+crop_growth_cycles = {
+    'Beans': {'days': 60, 'water_needs': 'Medium', 'season': 'Both'},
+    'Carrot': {'days': 75, 'water_needs': 'High', 'season': 'Cool'},
+    'Cabbage': {'days': 90, 'water_needs': 'High', 'season': 'Cool'},
+    'Tomato': {'days': 110, 'water_needs': 'Medium', 'season': 'Both'},
+    'Brinjal': {'days': 100, 'water_needs': 'Medium', 'season': 'Warm'},
+    'Pumpkin': {'days': 120, 'water_needs': 'Low', 'season': 'Warm'},
+    'Snake gourd': {'days': 80, 'water_needs': 'Medium', 'season': 'Warm'},
+    'Green Chilli': {'days': 95, 'water_needs': 'Medium', 'season': 'Warm'},
+    'Lime': {'days': 365, 'water_needs': 'Low', 'season': 'Both'},
+    'Samba': {'days': 120, 'water_needs': 'High', 'season': 'Both'},
+    'Nadu': {'days': 115, 'water_needs': 'High', 'season': 'Both'},
+    'Kekulu': {'days': 110, 'water_needs': 'High', 'season': 'Both'},
+    'Banana': {'days': 270, 'water_needs': 'High', 'season': 'Warm'},
+    'Papaw': {'days': 240, 'water_needs': 'Medium', 'season': 'Warm'},
+    'Pineapple': {'days': 540, 'water_needs': 'Low', 'season': 'Warm'},
+    'Apple': {'days': 180, 'water_needs': 'Medium', 'season': 'Cool'},
+    'Orange': {'days': 210, 'water_needs': 'Medium', 'season': 'Warm'}
+}
+
+feature_data['growth_days'] = feature_data['item_clean'].map(lambda x: crop_growth_cycles.get(x, {}).get('days', 90))
+feature_data['water_needs'] = feature_data['item_clean'].map(lambda x: crop_growth_cycles.get(x, {}).get('water_needs', 'Medium'))
+feature_data['optimal_season'] = feature_data['item_clean'].map(lambda x: crop_growth_cycles.get(x, {}).get('season', 'Both'))
+
+# Encode water needs
+water_mapping = {'Low': 0, 'Medium': 1, 'High': 2}
+feature_data['water_needs_encoded'] = feature_data['water_needs'].map(water_mapping)
+
+# Season compatibility score
+def season_compatibility_score(item_season, current_month):
+    if item_season == 'Both':
+        return 1.0
+    elif item_season == 'Cool' and current_month in [11, 12, 1, 2, 3]:
+        return 1.0
+    elif item_season == 'Warm' and current_month in [4, 5, 6, 7, 8, 9, 10]:
+        return 1.0
+    else:
+        return 0.3  # Partial compatibility
+
+feature_data['season_compatibility'] = feature_data.apply(
+    lambda row: season_compatibility_score(row['optimal_season'], row['month']), axis=1
+)
+
+print(f"✓ Created cultivation-specific features:")
+print(f"  - Growing seasons (Yala/Maha)")
+print(f"  - Estimated growing degree days")
+print(f"  - Rainfall patterns")
+print(f"  - Crop growth cycles")
+print(f"  - Water needs classification")
+print(f"  - Season compatibility scores")
+
+# 5. CREATE INTERACTION FEATURES
+print("\n5. CREATING INTERACTION FEATURES:")
+print("-"*40)
+
+# Price to average ratio
+feature_data['price_to_market_avg'] = feature_data['price_today'] / (feature_data['market_price_avg'] + 1e-10)
+
+# Price to volatility ratio
+feature_data['price_to_volatility'] = feature_data['price_today'] / (feature_data['price_rolling_std_5'] + 1e-10)
+
+# Season-price interaction
+feature_data['season_price_factor'] = feature_data['season_encoded'] * feature_data['price_today'] / 100
+
+# Market-demand indicator (simplified)
+feature_data['market_demand_indicator'] = feature_data['price_momentum_3'] * feature_data['market_price_spread']
+
+# Supply pressure indicator
+feature_data['supply_pressure'] = -feature_data['price_momentum_7'] * feature_data['price_rolling_std_10']
+
+# Growth-adjusted price
+feature_data['growth_adjusted_price'] = feature_data['price_today'] / (feature_data['growth_days'] / 100)
+
+print(f"✓ Created interaction features:")
+print(f"  - Price to market average ratio")
+print(f"  - Price to volatility ratio")
+print(f"  - Season-price interactions")
+print(f"  - Market demand indicators")
+print(f"  - Supply pressure indicators")
+print(f"  - Growth-adjusted prices")
+
+# 6. CREATE AGGREGATE FEATURES
+print("\n6. CREATING AGGREGATE FEATURES:")
+print("-"*40)
+
+# Weekly aggregates
+weekly_features = feature_data.groupby(['week_id', 'item_clean', 'market_clean']).agg({
+    'price_today': ['mean', 'std', 'min', 'max', 'count'],
+    'price_momentum_3': 'mean',
+    'price_rolling_std_5': 'mean'
+}).reset_index()
+
+weekly_features.columns = ['week_id', 'item_clean', 'market_clean', 
+                          'weekly_price_mean', 'weekly_price_std', 
+                          'weekly_price_min', 'weekly_price_max',
+                          'weekly_record_count', 'weekly_momentum_avg',
+                          'weekly_volatility_avg']
+
+# Merge weekly features
+feature_data = pd.merge(feature_data, weekly_features, 
+                        on=['week_id', 'item_clean', 'market_clean'], 
+                        how='left')
+
+# Monthly aggregates
+monthly_features = feature_data.groupby(['month_year', 'item_clean']).agg({
+    'price_today': ['mean', 'std'],
+    'market_price_spread': 'mean'
+}).reset_index()
+
+monthly_features.columns = ['month_year', 'item_clean', 
+                           'monthly_price_mean', 'monthly_price_std',
+                           'monthly_market_spread']
+
+# Merge monthly features
+feature_data = pd.merge(feature_data, monthly_features, 
+                        on=['month_year', 'item_clean'], 
+                        how='left')
+
+# Price deviation from weekly and monthly averages
+feature_data['price_deviation_weekly'] = (feature_data['price_today'] - feature_data['weekly_price_mean']) / (feature_data['weekly_price_std'] + 1e-10)
+feature_data['price_deviation_monthly'] = (feature_data['price_today'] - feature_data['monthly_price_mean']) / (feature_data['monthly_price_std'] + 1e-10)
+
+print(f"✓ Created aggregate features:")
+print(f"  - Weekly price statistics")
+print(f"  - Monthly price statistics")
+print(f"  - Price deviation from weekly/monthly averages")
+
+# 7. CREATE TARGET VARIABLES FOR PREDICTION
+print("\n7. CREATING TARGET VARIABLES:")
+print("-"*40)
+
+# Sort by date for lag operations
+feature_data = feature_data.sort_values(['item_clean', 'market_clean', 'report_date']).reset_index(drop=True)
+
+# Create future price targets (1, 3, 7 days ahead)
+for item in feature_data['item_clean'].unique():
+    for market in feature_data['market_clean'].unique():
+        mask = (feature_data['item_clean'] == item) & (feature_data['market_clean'] == market)
+        
+        # Target: Price 1 day ahead
+        feature_data.loc[mask, 'target_price_1d'] = feature_data.loc[mask, 'price_today'].shift(-1)
+        
+        # Target: Price 3 days ahead
+        feature_data.loc[mask, 'target_price_3d'] = feature_data.loc[mask, 'price_today'].shift(-3)
+        
+        # Target: Price 7 days ahead (1 week)
+        feature_data.loc[mask, 'target_price_7d'] = feature_data.loc[mask, 'price_today'].shift(-7)
+        
+        # Target: Price change percentage (1 day ahead)
+        feature_data.loc[mask, 'target_price_change_1d'] = (
+            feature_data.loc[mask, 'price_today'].shift(-1) - feature_data.loc[mask, 'price_today']
+        ) / feature_data.loc[mask, 'price_today']
+
+# Create binary classification target (price increase vs decrease)
+feature_data['target_price_increase_1d'] = (feature_data['target_price_change_1d'] > 0).astype(int)
+
+print(f"✓ Created target variables:")
+print(f"  - Future prices (1, 3, 7 days ahead)")
+print(f"  - Price change percentages")
+print(f"  - Binary classification (price increase/decrease)")
+
+# 8. HANDLE MISSING VALUES IN NEW FEATURES (SIMPLIFIED)
+print("\n8. HANDLING MISSING VALUES IN NEW FEATURES:")
+print("-"*40)
+
+# Count missing values before handling
+missing_before = feature_data.isnull().sum()
+total_missing = missing_before.sum()
+print(f"Total missing values before handling: {total_missing:,}")
+
+# Simplified approach without complex groupby
+# First, sort the data
+feature_data = feature_data.sort_values(['item_clean', 'market_clean', 'report_date'])
+
+# Identify columns that need filling
+all_columns = feature_data.columns.tolist()
+
+# Fill missing values using a simpler approach
+for col in all_columns:
+    if feature_data[col].isnull().any():
+        missing_count = feature_data[col].isnull().sum()
+        
+        if col.startswith('target_'):
+            # Handle target variables
+            if 'price_change' in col or 'increase' in col:
+                feature_data[col].fillna(0, inplace=True)
+            else:
+                # For future price targets, use current price
+                feature_data[col].fillna(feature_data['price_today'], inplace=True)
+                
+        elif feature_data[col].dtype == 'object':
+            # Categorical columns
+            feature_data[col].fillna('Unknown', inplace=True)
+            
+        elif 'price' in col.lower() or 'momentum' in col.lower() or 'volatility' in col.lower():
+            # Price-related numeric columns
+            # Simple forward then backward fill
+            feature_data[col] = feature_data[col].ffill().bfill()
+            # If still missing, fill with column median
+            if feature_data[col].isnull().any():
+                feature_data[col].fillna(feature_data[col].median(), inplace=True)
+                
+        else:
+            # Other numeric columns
+            feature_data[col].fillna(feature_data[col].median(), inplace=True)
+            
+        print(f"  Filled {missing_count:,} missing values in {col}")
+
+# Count missing values after handling
+missing_after = feature_data.isnull().sum()
+remaining_missing = missing_after.sum()
+print(f"\n✓ Remaining missing values after handling: {remaining_missing:,}")
+
+# If there are still missing values, drop those rows
+if remaining_missing > 0:
+    print(f"Dropping {feature_data.isnull().any(axis=1).sum()} rows with remaining missing values...")
+    feature_data = feature_data.dropna()
+    print(f"✓ Final dataset has {len(feature_data):,} rows with no missing values")
+    
+# 9. FEATURE SCALING
+print("\n9. APPLYING FEATURE SCALING:")
+print("-"*40)
+
+# Identify numeric columns to scale (excluding encoded categorical and binary)
+cols_to_scale = []
+for col in feature_data.select_dtypes(include=[np.number]).columns:
+    # Skip columns that are already normalized (ratios, percentages) or binary
+    if ('_encoded' not in col) and ('target_' not in col) and ('is_' not in col) and \
+       ('_flag' not in col) and (col not in ['year', 'month', 'day', 'week', 'day_of_week', 'quarter']):
+        cols_to_scale.append(col)
+
+print(f"Scaling {len(cols_to_scale)} numeric features")
+
+# Apply standard scaling
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(feature_data[cols_to_scale])
+scaled_df = pd.DataFrame(scaled_features, columns=[f'{col}_scaled' for col in cols_to_scale])
+
+# Add scaled features to dataframe
+feature_data = pd.concat([feature_data, scaled_df], axis=1)
+
+print(f"✓ Applied StandardScaler to {len(cols_to_scale)} features")
+
+# 10. FINAL FEATURE SELECTION
+print("\n10. FINAL FEATURE SELECTION:")
+print("-"*40)
+
+# Define final feature columns for ML model
+final_features = [
+    # Basic features
+    'market_clean_encoded', 'category_encoded', 'price_type_encoded', 'item_clean_encoded', 'crop_type_encoded',
+    
+    # Time features
+    'month', 'day_of_week', 'quarter', 'is_month_start', 'is_month_end', 'season_encoded',
+    
+    # Price features
+    'price_rolling_avg_5_scaled', 'price_rolling_avg_7_scaled',
+    'price_rolling_std_5_scaled', 'price_rolling_std_10_scaled',
+    'price_momentum_3_scaled', 'price_momentum_7_scaled',
+    'price_range_5_scaled', 'price_position_5_scaled',
+    'price_lag_1_scaled', 'price_lag_3_scaled',
+    'price_trend_5_scaled', 'price_seasonal_7_scaled',
+    
+    # Market features
+    'market_price_spread_scaled', 'market_price_std_scaled', 'market_price_cv_scaled',
+    
+    # Cultivation features
+    'growth_days_scaled', 'water_needs_encoded', 'season_compatibility_scaled',
+    'gdd_estimation_scaled', 'rainfall_encoded',
+    
+    # Interaction features
+    'price_to_market_avg_scaled', 'price_to_volatility_scaled',
+    'season_price_factor_scaled', 'market_demand_indicator_scaled',
+    'supply_pressure_scaled', 'growth_adjusted_price_scaled',
+    
+    # Aggregate features
+    'weekly_price_mean_scaled', 'weekly_price_std_scaled',
+    'monthly_price_mean_scaled', 'monthly_price_std_scaled',
+    'price_deviation_weekly_scaled', 'price_deviation_monthly_scaled'
+]
+
+# Check which features are available
+available_features = [feat for feat in final_features if feat in feature_data.columns]
+missing_features = set(final_features) - set(available_features)
+
+print(f"Selected {len(available_features)} features for ML model")
+if missing_features:
+    print(f"Missing {len(missing_features)} features: {list(missing_features)[:5]}...")
+
+# Create final feature dataframe
+X = feature_data[available_features].copy()
+y_regression = feature_data['target_price_7d']  # 7-day price prediction
+y_classification = feature_data['target_price_increase_1d']  # Price increase classification
+
+print(f"✓ Feature matrix shape: {X.shape}")
+print(f"✓ Regression target shape: {y_regression.shape}")
+print(f"✓ Classification target shape: {y_classification.shape}")
+
+# 11. FEATURE CORRELATION ANALYSIS
+print("\n11. FEATURE CORRELATION ANALYSIS:")
+print("-"*40)
+
+# Calculate correlation with target
+correlations = []
+for col in X.columns:
+    if '_scaled' in col:
+        orig_col = col.replace('_scaled', '')
+        if orig_col in feature_data.columns:
+            corr = feature_data[orig_col].corr(feature_data['target_price_7d'])
+            correlations.append((orig_col, abs(corr)))
+
+# Sort by absolute correlation
+correlations.sort(key=lambda x: x[1], reverse=True)
+
+print("Top 10 features correlated with 7-day future price:")
+for i, (feat, corr) in enumerate(correlations[:10], 1):
+    print(f"  {i:2d}. {feat:30s}: {corr:.4f}")
+
+# VISUALIZATION 2: Feature Correlation Heatmap
+plt.figure(figsize=(14, 12))
+# Select top 20 features for visualization
+top_features = [feat for feat, _ in correlations[:20]]
+top_feature_data = X[[f'{feat}_scaled' for feat in top_features if f'{feat}_scaled' in X.columns]].copy()
+corr_matrix = top_feature_data.corr()
+
+sns.heatmap(corr_matrix, annot=False, cmap='coolwarm', center=0,
+            square=True, cbar_kws={"shrink": 0.8})
+plt.title('Feature Correlation Heatmap (Top 20 Features)', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+# VISUALIZATION 3: Feature Importance by Category
+plt.figure(figsize=(12, 8))
+feature_categories = {
+    'Basic Features': ['market_clean_encoded', 'category_encoded', 'item_clean_encoded'],
+    'Time Features': ['month', 'day_of_week', 'season_encoded'],
+    'Price Trends': ['price_momentum_3_scaled', 'price_trend_5_scaled', 'price_seasonal_7_scaled'],
+    'Volatility': ['price_rolling_std_5_scaled', 'price_rolling_std_10_scaled', 'market_price_std_scaled'],
+    'Market Dynamics': ['market_price_spread_scaled', 'market_price_cv_scaled'],
+    'Cultivation': ['growth_days_scaled', 'season_compatibility_scaled', 'gdd_estimation_scaled']
+}
+
+category_importance = {}
+for category, features in feature_categories.items():
+    avg_corr = 0
+    count = 0
+    for feat in features:
+        if feat in X.columns:
+            orig_feat = feat.replace('_scaled', '')
+            if orig_feat in [f for f, _ in correlations]:
+                corr_dict = dict(correlations)
+                avg_corr += corr_dict.get(orig_feat, 0)
+                count += 1
+    if count > 0:
+        category_importance[category] = avg_corr / count
+
+plt.barh(list(category_importance.keys()), list(category_importance.values()),
+         color=plt.cm.Set2(np.arange(len(category_importance))))
+plt.title('Average Feature Correlation by Category', fontsize=14, fontweight='bold')
+plt.xlabel('Average Absolute Correlation with Target', fontsize=12)
+plt.ylabel('Feature Category', fontsize=12)
+plt.grid(axis='x', alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+import joblib
+
+# 12. SAVE ENGINEERED FEATURES
+print("\n12. SAVING ENGINEERED FEATURES:")
+print("-"*40)
+
+# Save the feature-engineered dataset
+feature_data.to_csv('feature_engineered_data.csv', index=False)
+print(f"✓ Saved feature-engineered data to 'feature_engineered_data.csv'")
+
+# Save feature matrix and targets
+X.to_csv('feature_matrix.csv', index=False)
+y_regression.to_csv('target_regression.csv', index=False, header=['target_price_7d'])
+y_classification.to_csv('target_classification.csv', index=False, header=['target_price_increase_1d'])
+
+# Save scaler and label encoders
+joblib.dump(scaler, 'feature_scaler.pkl')
+joblib.dump(label_encoders, 'label_encoders.pkl')
+joblib.dump(available_features, 'selected_features.pkl')
+
+print(f"✓ Saved feature matrix and targets")
+print(f"✓ Saved scaler and encoders to pickle files")
+
+# Create summary statistics
+feature_stats = pd.DataFrame({
+    'Feature': X.columns,
+    'Mean': X.mean(),
+    'Std': X.std(),
+    'Min': X.min(),
+    'Max': X.max(),
+    'Missing': X.isnull().sum()
+})
+
+feature_stats.to_csv('feature_statistics.csv', index=False)
+
+print(f"✓ Saved feature statistics to 'feature_statistics.csv'")
+
+print("\n" + "="*80)
+print("FEATURE ENGINEERING COMPLETE!")
+print("="*80)
+print(f"✓ Created {len(X.columns)} engineered features")
+print(f"✓ Generated {len(feature_data):,} records with complete features")
+print(f"✓ Saved all engineered data and models")
+print(f"✓ Ready for model training and evaluation")
+# Section 5: Create Cultivation-Specific Features
+# Section 5: Create Cultivation-Specific Features
+
+print("="*80)
+print("CULTIVATION-SPECIFIC FEATURE ENGINEERING")
+print("="*80)
+
+print(f"Starting with {len(feature_data):,} records")
+print(f"Current columns: {len(feature_data.columns)}")
+
+# Load cultivation-specific data if available, otherwise create from existing features
+cultivation_features = feature_data.copy()
+
+# 1. ENHANCE EXISTING CULTIVATION FEATURES
+print("\n1. ENHANCING EXISTING CULTIVATION FEATURES:")
+print("-"*40)
+
+# Check what cultivation features already exist
+existing_cultivation_cols = [col for col in cultivation_features.columns 
+                            if any(term in col.lower() for term in ['growth', 'season', 'water', 'crop', 'cultivation', 'harvest', 'sow'])]
+print(f"Found {len(existing_cultivation_cols)} existing cultivation features:")
+for col in existing_cultivation_cols[:10]:
+    print(f"  - {col}")
+
+# 2. CREATE COMPREHENSIVE CROP DATABASE
+print("\n2. CREATING COMPREHENSIVE CROP DATABASE:")
+print("-"*40)
+
+# Define comprehensive crop characteristics for Sri Lanka
+crop_database = {
+    'Beans': {
+        'scientific_name': 'Phaseolus vulgaris',
+        'growth_days': 60,
+        'water_needs': 'Medium',
+        'optimal_season': 'Both',
+        'soil_type': 'Well-drained loamy',
+        'ph_range': [6.0, 7.0],
+        'temperature_range': [20, 30],
+        'yield_per_ha': 800,  # kg/ha
+        'market_demand': 'High',
+        'storage_life': 7,  # days
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'Medium'
+    },
+    'Carrot': {
+        'scientific_name': 'Daucus carota',
+        'growth_days': 75,
+        'water_needs': 'High',
+        'optimal_season': 'Cool',
+        'soil_type': 'Sandy loam',
+        'ph_range': [6.0, 7.0],
+        'temperature_range': [15, 25],
+        'yield_per_ha': 25000,
+        'market_demand': 'High',
+        'storage_life': 21,
+        'pest_resistance': 'High',
+        'fertilizer_needs': 'High',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'High'
+    },
+    'Cabbage': {
+        'scientific_name': 'Brassica oleracea',
+        'growth_days': 90,
+        'water_needs': 'High',
+        'optimal_season': 'Cool',
+        'soil_type': 'Loamy',
+        'ph_range': [6.0, 6.8],
+        'temperature_range': [15, 20],
+        'yield_per_ha': 35000,
+        'market_demand': 'High',
+        'storage_life': 14,
+        'pest_resistance': 'Low',
+        'fertilizer_needs': 'High',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'Medium'
+    },
+    'Tomato': {
+        'scientific_name': 'Solanum lycopersicum',
+        'growth_days': 110,
+        'water_needs': 'Medium',
+        'optimal_season': 'Both',
+        'soil_type': 'Well-drained',
+        'ph_range': [6.0, 7.0],
+        'temperature_range': [21, 24],
+        'yield_per_ha': 30000,
+        'market_demand': 'Very High',
+        'storage_life': 7,
+        'pest_resistance': 'Low',
+        'fertilizer_needs': 'High',
+        'irrigation_required': True,
+        'intercropping_possible': False,
+        'export_potential': 'High'
+    },
+    'Brinjal': {
+        'scientific_name': 'Solanum melongena',
+        'growth_days': 100,
+        'water_needs': 'Medium',
+        'optimal_season': 'Warm',
+        'soil_type': 'Sandy loam',
+        'ph_range': [5.5, 6.5],
+        'temperature_range': [25, 32],
+        'yield_per_ha': 25000,
+        'market_demand': 'High',
+        'storage_life': 10,
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'Medium'
+    },
+    'Pumpkin': {
+        'scientific_name': 'Cucurbita maxima',
+        'growth_days': 120,
+        'water_needs': 'Low',
+        'optimal_season': 'Warm',
+        'soil_type': 'Well-drained',
+        'ph_range': [6.0, 7.0],
+        'temperature_range': [20, 30],
+        'yield_per_ha': 15000,
+        'market_demand': 'Medium',
+        'storage_life': 90,
+        'pest_resistance': 'High',
+        'fertilizer_needs': 'Low',
+        'irrigation_required': False,
+        'intercropping_possible': True,
+        'export_potential': 'Low'
+    },
+    'Snake gourd': {
+        'scientific_name': 'Trichosanthes cucumerina',
+        'growth_days': 80,
+        'water_needs': 'Medium',
+        'optimal_season': 'Warm',
+        'soil_type': 'Loamy',
+        'ph_range': [6.0, 7.5],
+        'temperature_range': [25, 35],
+        'yield_per_ha': 20000,
+        'market_demand': 'Medium',
+        'storage_life': 5,
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'Low'
+    },
+    'Green Chilli': {
+        'scientific_name': 'Capsicum annuum',
+        'growth_days': 95,
+        'water_needs': 'Medium',
+        'optimal_season': 'Warm',
+        'soil_type': 'Sandy loam',
+        'ph_range': [6.0, 7.0],
+        'temperature_range': [20, 30],
+        'yield_per_ha': 10000,
+        'market_demand': 'Very High',
+        'storage_life': 14,
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'High'
+    },
+    'Lime': {
+        'scientific_name': 'Citrus aurantifolia',
+        'growth_days': 365,
+        'water_needs': 'Low',
+        'optimal_season': 'Both',
+        'soil_type': 'Well-drained',
+        'ph_range': [6.0, 7.5],
+        'temperature_range': [20, 30],
+        'yield_per_ha': 15000,
+        'market_demand': 'High',
+        'storage_life': 30,
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': False,
+        'intercropping_possible': False,
+        'export_potential': 'High'
+    },
+    'Samba': {
+        'scientific_name': 'Oryza sativa',
+        'growth_days': 120,
+        'water_needs': 'High',
+        'optimal_season': 'Both',
+        'soil_type': 'Clay loam',
+        'ph_range': [5.5, 6.5],
+        'temperature_range': [20, 35],
+        'yield_per_ha': 4000,
+        'market_demand': 'Very High',
+        'storage_life': 365,
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'High',
+        'irrigation_required': True,
+        'intercropping_possible': False,
+        'export_potential': 'Medium'
+    },
+    'Nadu': {
+        'scientific_name': 'Oryza sativa',
+        'growth_days': 115,
+        'water_needs': 'High',
+        'optimal_season': 'Both',
+        'soil_type': 'Clay loam',
+        'ph_range': [5.5, 6.5],
+        'temperature_range': [20, 35],
+        'yield_per_ha': 4500,
+        'market_demand': 'Very High',
+        'storage_life': 365,
+        'pest_resistance': 'Medium',
+        'fertilizer_needs': 'High',
+        'irrigation_required': True,
+        'intercropping_possible': False,
+        'export_potential': 'Medium'
+    },
+    'Kekulu': {
+        'scientific_name': 'Oryza sativa',
+        'growth_days': 110,
+        'water_needs': 'High',
+        'optimal_season': 'Both',
+        'soil_type': 'Clay loam',
+        'ph_range': [5.5, 6.5],
+        'temperature_range': [20, 35],
+        'yield_per_ha': 4200,
+        'market_demand': 'High',
+        'storage_life': 365,
+        'pest_resistance': 'High',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': True,
+        'intercropping_possible': False,
+        'export_potential': 'Low'
+    },
+    'Banana': {
+        'scientific_name': 'Musa acuminata',
+        'growth_days': 270,
+        'water_needs': 'High',
+        'optimal_season': 'Warm',
+        'soil_type': 'Deep loamy',
+        'ph_range': [6.0, 7.5],
+        'temperature_range': [20, 35],
+        'yield_per_ha': 30000,
+        'market_demand': 'High',
+        'storage_life': 14,
+        'pest_resistance': 'Low',
+        'fertilizer_needs': 'High',
+        'irrigation_required': True,
+        'intercropping_possible': True,
+        'export_potential': 'High'
+    },
+    'Papaw': {
+        'scientific_name': 'Carica papaya',
+        'growth_days': 240,
+        'water_needs': 'Medium',
+        'optimal_season': 'Warm',
+        'soil_type': 'Well-drained',
+        'ph_range': [6.0, 7.0],
+        'temperature_range': [22, 30],
+        'yield_per_ha': 50000,
+        'market_demand': 'Medium',
+        'storage_life': 7,
+        'pest_resistance': 'Low',
+        'fertilizer_needs': 'Medium',
+        'irrigation_required': True,
+        'intercropping_possible': False,
+        'export_potential': 'Medium'
+    },
+    'Pineapple': {
+        'scientific_name': 'Ananas comosus',
+        'growth_days': 540,
+        'water_needs': 'Low',
+        'optimal_season': 'Warm',
+        'soil_type': 'Sandy',
+        'ph_range': [4.5, 6.5],
+        'temperature_range': [20, 32],
+        'yield_per_ha': 70000,
+        'market_demand': 'Medium',
+        'storage_life': 21,
+        'pest_resistance': 'High',
+        'fertilizer_needs': 'Low',
+        'irrigation_required': False,
+        'intercropping_possible': False,
+        'export_potential': 'High'
+    }
+}
+
+print(f"Created database for {len(crop_database)} crops")
+
+# 3. ADD CROP CHARACTERISTICS TO DATAFRAME
+print("\n3. ADDING CROP CHARACTERISTICS TO DATAFRAME:")
+print("-"*40)
+
+# Add comprehensive crop characteristics
+for crop, characteristics in crop_database.items():
+    mask = cultivation_features['item_clean'] == crop
+    for key, value in characteristics.items():
+        col_name = f'crop_{key}'
+        if isinstance(value, list):
+            # For ranges, store as string
+            cultivation_features.loc[mask, f'{col_name}_min'] = value[0] if len(value) > 0 else np.nan
+            cultivation_features.loc[mask, f'{col_name}_max'] = value[1] if len(value) > 1 else np.nan
+        elif isinstance(value, str):
+            cultivation_features.loc[mask, col_name] = value
+        else:  # numeric
+            cultivation_features.loc[mask, col_name] = value
+
+print(f"✓ Added {sum(len(v) for v in crop_database.values())} crop characteristics")
+print(f"✓ New columns added: {[col for col in cultivation_features.columns if col.startswith('crop_')][:5]}...")
+
+# 4. CREATE CULTIVATION OPPORTUNITY SCORES
+print("\n4. CREATING CULTIVATION OPPORTUNITY SCORES:")
+print("-"*40)
+
+# Calculate opportunity scores based on multiple factors
+def calculate_opportunity_score(row):
+    score = 0
+    factors = []
+    
+    # 1. Price momentum factor (30%)
+    if 'price_momentum_7' in row.index and pd.notnull(row['price_momentum_7']):
+        momentum_factor = max(0, row['price_momentum_7'] * 100)  # Convert to percentage
+        score += momentum_factor * 0.3
+        factors.append(f"Momentum: {momentum_factor:.2f}%")
+    
+    # 2. Market demand factor (20%)
+    if 'crop_market_demand' in row.index:
+        demand_map = {'Very High': 1.0, 'High': 0.8, 'Medium': 0.5, 'Low': 0.2}
+        demand_score = demand_map.get(row['crop_market_demand'], 0.5)
+        score += demand_score * 20  # Scale to 20 points
+        factors.append(f"Demand: {row['crop_market_demand']}")
+    
+    # 3. Season compatibility factor (15%)
+    if 'season_compatibility' in row.index and pd.notnull(row['season_compatibility']):
+        season_score = row['season_compatibility']
+        score += season_score * 15  # Scale to 15 points
+        factors.append(f"Season: {season_score:.2f}")
+    
+    # 4. Price stability factor (10%)
+    if 'price_rolling_std_5' in row.index and pd.notnull(row['price_rolling_std_5']):
+        # Inverse volatility - lower volatility is better
+        if row['price_rolling_std_5'] > 0:
+            stability_score = 100 / (row['price_rolling_std_5'] + 1)
+            score += min(stability_score * 0.1, 10)  # Cap at 10 points
+            factors.append(f"Stability: {stability_score:.2f}")
+    
+    # 5. Yield potential factor (10%)
+    if 'crop_yield_per_ha' in row.index and pd.notnull(row['crop_yield_per_ha']):
+        # Normalize yield (assuming max yield is 100,000 kg/ha)
+        yield_score = min(row['crop_yield_per_ha'] / 1000, 10)  # Scale to 10 points
+        score += yield_score
+        factors.append(f"Yield: {yield_score:.2f}")
+    
+    # 6. Export potential factor (5%)
+    if 'crop_export_potential' in row.index:
+        export_map = {'High': 5, 'Medium': 3, 'Low': 1}
+        export_score = export_map.get(row['crop_export_potential'], 2)
+        score += export_score
+        factors.append(f"Export: {row['crop_export_potential']}")
+    
+    # 7. Storage life factor (5%)
+    if 'crop_storage_life' in row.index and pd.notnull(row['crop_storage_life']):
+        storage_score = min(row['crop_storage_life'] / 10, 5)  # Scale to 5 points
+        score += storage_score
+        factors.append(f"Storage: {storage_score:.2f}")
+    
+    # 8. Pest resistance factor (5%)
+    if 'crop_pest_resistance' in row.index:
+        pest_map = {'High': 5, 'Medium': 3, 'Low': 1}
+        pest_score = pest_map.get(row['crop_pest_resistance'], 2)
+        score += pest_score
+        factors.append(f"Pest Res: {row['crop_pest_resistance']}")
+    
+    # Normalize score to 0-100 range
+    score = min(max(score, 0), 100)
+    
+    return score, " | ".join(factors)
+
+# Apply opportunity score calculation
+opportunity_scores = cultivation_features.apply(calculate_opportunity_score, axis=1, result_type='expand')
+cultivation_features['opportunity_score'] = opportunity_scores[0]
+cultivation_features['opportunity_factors'] = opportunity_scores[1]
+
+print(f"✓ Calculated opportunity scores: {cultivation_features['opportunity_score'].min():.2f} to {cultivation_features['opportunity_score'].max():.2f}")
+print(f"✓ Average opportunity score: {cultivation_features['opportunity_score'].mean():.2f}")
+
+# 5. CREATE RISK ASSESSMENT FEATURES
+print("\n5. CREATING RISK ASSESSMENT FEATURES:")
+print("-"*40)
+
+def calculate_risk_level(row):
+    risk_score = 0
+    risk_factors = []
+    
+    # 1. Price volatility risk
+    if 'price_rolling_std_10' in row.index and pd.notnull(row['price_rolling_std_10']):
+        if row['price_rolling_std_10'] > 150:
+            risk_score += 3
+            risk_factors.append("High volatility")
+        elif row['price_rolling_std_10'] > 100:
+            risk_score += 2
+            risk_factors.append("Medium volatility")
+        elif row['price_rolling_std_10'] > 50:
+            risk_score += 1
+            risk_factors.append("Low volatility")
+    
+    # 2. Negative momentum risk
+    if 'price_momentum_7' in row.index and pd.notnull(row['price_momentum_7']):
+        if row['price_momentum_7'] < -0.1:
+            risk_score += 3
+            risk_factors.append("Strong negative trend")
+        elif row['price_momentum_7'] < -0.05:
+            risk_score += 2
+            risk_factors.append("Negative trend")
+        elif row['price_momentum_7'] < 0:
+            risk_score += 1
+            risk_factors.append("Slight decline")
+    
+    # 3. Season incompatibility risk
+    if 'season_compatibility' in row.index and pd.notnull(row['season_compatibility']):
+        if row['season_compatibility'] < 0.5:
+            risk_score += 2
+            risk_factors.append("Off-season")
+    
+    # 4. Pest susceptibility risk
+    if 'crop_pest_resistance' in row.index:
+        if row['crop_pest_resistance'] == 'Low':
+            risk_score += 2
+            risk_factors.append("High pest susceptibility")
+        elif row['crop_pest_resistance'] == 'Medium':
+            risk_score += 1
+            risk_factors.append("Medium pest susceptibility")
+    
+    # 5. Short storage life risk
+    if 'crop_storage_life' in row.index and pd.notnull(row['crop_storage_life']):
+        if row['crop_storage_life'] < 7:
+            risk_score += 2
+            risk_factors.append("Short shelf life")
+        elif row['crop_storage_life'] < 14:
+            risk_score += 1
+            risk_factors.append("Limited storage")
+    
+    # Determine risk level
+    if risk_score >= 6:
+        risk_level = 'High'
+    elif risk_score >= 3:
+        risk_level = 'Medium'
+    else:
+        risk_level = 'Low'
+    
+    return risk_level, risk_score, " | ".join(risk_factors)
+
+# Apply risk assessment
+risk_assessments = cultivation_features.apply(calculate_risk_level, axis=1, result_type='expand')
+cultivation_features['risk_level'] = risk_assessments[0]
+cultivation_features['risk_score'] = risk_assessments[1]
+cultivation_features['risk_factors'] = risk_assessments[2]
+
+print(f"✓ Risk distribution:")
+risk_counts = cultivation_features['risk_level'].value_counts()
+for level, count in risk_counts.items():
+    percentage = (count / len(cultivation_features)) * 100
+    print(f"  - {level}: {count:,} ({percentage:.1f}%)")
+
+# 6. CREATE ACTION WINDOW FEATURES
+print("\n6. CREATING ACTION WINDOW FEATURES:")
+print("-"*40)
+
+def calculate_action_window(row, current_date=None):
+    if current_date is None:
+        current_date = pd.Timestamp.now()
+    
+    # Get growth days
+    growth_days = row.get('crop_growth_days', row.get('growth_days', 90))
+    
+    # Calculate optimal planting window (next 1-4 weeks)
+    start_date = current_date + pd.Timedelta(days=7)
+    end_date = current_date + pd.Timedelta(days=28)
+    
+    # Calculate expected harvest date
+    harvest_date = start_date + pd.Timedelta(days=growth_days)
+    
+    # Format dates
+    window_str = f"{start_date.strftime('%b %d')} - {end_date.strftime('%b %d')}"
+    harvest_str = harvest_date.strftime('%b %d, %Y')
+    
+    # Calculate days to harvest
+    days_to_harvest = (harvest_date - current_date).days
+    
+    return window_str, harvest_str, days_to_harvest
+
+# Apply action window calculation (using the latest date in dataset as current)
+latest_date = cultivation_features['report_date'].max()
+action_windows = cultivation_features.apply(lambda row: calculate_action_window(row, latest_date), axis=1, result_type='expand')
+
+cultivation_features['action_window'] = action_windows[0]
+cultivation_features['expected_harvest'] = action_windows[1]
+cultivation_features['days_to_harvest'] = action_windows[2]
+
+print(f"✓ Created action windows:")
+print(f"  - Planting window: Next 1-4 weeks")
+print(f"  - Based on latest date: {latest_date.strftime('%Y-%m-%d')}")
+print(f"  - Harvest range: {cultivation_features['days_to_harvest'].min()} to {cultivation_features['days_to_harvest'].max()} days")
+
+# 7. CREATE IRRIGATION AND RESOURCE FEATURES
+print("\n7. CREATING IRRIGATION AND RESOURCE FEATURES:")
+print("-"*40)
+
+# Calculate water requirement index
+def calculate_water_index(row):
+    water_needs = row.get('crop_water_needs', row.get('water_needs', 'Medium'))
+    water_map = {'High': 3, 'Medium': 2, 'Low': 1}
+    
+    # Adjust based on season
+    season = row.get('season', 'Yala')
+    if season == 'Yala' and water_needs == 'High':
+        return 4  # Extra water needed in dry season
+    elif season == 'Maha' and water_needs == 'Low':
+        return 0.5  # Less water needed in wet season
+    else:
+        return water_map.get(water_needs, 2)
+
+cultivation_features['water_requirement_index'] = cultivation_features.apply(calculate_water_index, axis=1)
+
+# Calculate fertilizer requirement
+def calculate_fertilizer_index(row):
+    fertilizer_needs = row.get('crop_fertilizer_needs', 'Medium')
+    fertilizer_map = {'High': 3, 'Medium': 2, 'Low': 1}
+    return fertilizer_map.get(fertilizer_needs, 2)
+
+cultivation_features['fertilizer_requirement_index'] = cultivation_features.apply(calculate_fertilizer_index, axis=1)
+
+# Calculate labor intensity (simplified)
+def calculate_labor_intensity(row):
+    growth_days = row.get('crop_growth_days', row.get('growth_days', 90))
+    if growth_days < 60:
+        return 'Low'
+    elif growth_days < 120:
+        return 'Medium'
+    else:
+        return 'High'
+
+cultivation_features['labor_intensity'] = cultivation_features.apply(calculate_labor_intensity, axis=1)
+
+print(f"✓ Created resource requirement features:")
+print(f"  - Water requirement index: {cultivation_features['water_requirement_index'].mean():.2f}")
+print(f"  - Fertilizer requirement index: {cultivation_features['fertilizer_requirement_index'].mean():.2f}")
+print(f"  - Labor intensity distribution: {cultivation_features['labor_intensity'].value_counts().to_dict()}")
+
+# 8. CREATE MARKET TIMING FEATURES
+print("\n8. CREATING MARKET TIMING FEATURES:")
+print("-"*40)
+
+# Calculate expected price at harvest
+def calculate_expected_price(row):
+    current_price = row.get('price_today', 300)
+    momentum = row.get('price_momentum_7', 0)
+    
+    # Project price based on 7-day momentum
+    days_to_harvest = row.get('days_to_harvest', 90)
+    weeks_to_harvest = days_to_harvest / 7
+    
+    # Simple projection: current price * (1 + weekly momentum)^weeks
+    expected_price = current_price * ((1 + momentum) ** weeks_to_harvest)
+    
+    # Add 15% uncertainty range
+    lower_bound = expected_price * 0.85
+    upper_bound = expected_price * 1.15
+    
+    return expected_price, lower_bound, upper_bound
+
+price_projections = cultivation_features.apply(calculate_expected_price, axis=1, result_type='expand')
+cultivation_features['expected_harvest_price'] = price_projections[0]
+cultivation_features['expected_price_lower'] = price_projections[1]
+cultivation_features['expected_price_upper'] = price_projections[2]
+
+# Calculate price range
+cultivation_features['expected_price_range'] = cultivation_features.apply(
+    lambda row: f"LKR {row['expected_price_lower']:.0f} - LKR {row['expected_price_upper']:.0f}", axis=1
+)
+
+print(f"✓ Created market timing features:")
+print(f"  - Average expected harvest price: LKR {cultivation_features['expected_harvest_price'].mean():.0f}")
+print(f"  - Price projection range: LKR {cultivation_features['expected_price_lower'].mean():.0f} to LKR {cultivation_features['expected_price_upper'].mean():.0f}")
+
+# 9. VISUALIZE CULTIVATION FEATURES
+print("\n9. VISUALIZING CULTIVATION FEATURES:")
+print("-"*40)
+
+# Visualization 1: Opportunity Score Distribution
+plt.figure(figsize=(14, 10))
+
+plt.subplot(2, 3, 1)
+# Opportunity score distribution
+sns.histplot(cultivation_features['opportunity_score'], bins=30, kde=True, color='green', alpha=0.6)
+plt.title('Opportunity Score Distribution', fontsize=12, fontweight='bold')
+plt.xlabel('Opportunity Score', fontsize=10)
+plt.ylabel('Frequency', fontsize=10)
+plt.grid(alpha=0.3)
+
+plt.subplot(2, 3, 2)
+# Risk level distribution
+risk_counts = cultivation_features['risk_level'].value_counts()
+colors = ['#4CAF50', '#FFC107', '#F44336']  # Green, Yellow, Red
+plt.pie(risk_counts.values, labels=risk_counts.index, autopct='%1.1f%%', 
+        colors=colors, startangle=90)
+plt.title('Risk Level Distribution', fontsize=12, fontweight='bold')
+
+plt.subplot(2, 3, 3)
+# Top crops by opportunity score
+top_crops = cultivation_features.groupby('item_clean')['opportunity_score'].mean().sort_values(ascending=False).head(10)
+plt.barh(range(len(top_crops)), top_crops.values, color='lightblue', edgecolor='black')
+plt.yticks(range(len(top_crops)), top_crops.index)
+plt.title('Top 10 Crops by Opportunity Score', fontsize=12, fontweight='bold')
+plt.xlabel('Average Opportunity Score', fontsize=10)
+plt.gca().invert_yaxis()
+plt.grid(axis='x', alpha=0.3)
+
+plt.subplot(2, 3, 4)
+# Growth days vs opportunity score
+plt.scatter(cultivation_features['crop_growth_days'], cultivation_features['opportunity_score'], 
+            alpha=0.5, c=cultivation_features['risk_score'], cmap='RdYlGn')
+plt.colorbar(label='Risk Score')
+plt.title('Growth Days vs Opportunity Score', fontsize=12, fontweight='bold')
+plt.xlabel('Growth Days', fontsize=10)
+plt.ylabel('Opportunity Score', fontsize=10)
+plt.grid(alpha=0.3)
+
+plt.subplot(2, 3, 5)
+# Market demand distribution
+demand_counts = cultivation_features['crop_market_demand'].value_counts()
+plt.bar(range(len(demand_counts)), demand_counts.values, 
+        color=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'], edgecolor='black')
+plt.xticks(range(len(demand_counts)), demand_counts.index, rotation=45)
+plt.title('Market Demand Distribution', fontsize=12, fontweight='bold')
+plt.xlabel('Demand Level', fontsize=10)
+plt.ylabel('Count', fontsize=10)
+plt.grid(axis='y', alpha=0.3)
+
+plt.subplot(2, 3, 6)
+# Expected harvest price vs current price
+plt.scatter(cultivation_features['price_today'], cultivation_features['expected_harvest_price'], 
+            alpha=0.6, c='blue')
+plt.plot([0, 500], [0, 500], 'r--', alpha=0.5, label='Same Price Line')
+plt.title('Current vs Expected Harvest Price', fontsize=12, fontweight='bold')
+plt.xlabel('Current Price (LKR)', fontsize=10)
+plt.ylabel('Expected Harvest Price (LKR)', fontsize=10)
+plt.legend()
+plt.grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 10. SAVE CULTIVATION-SPECIFIC FEATURES
+print("\n10. SAVING CULTIVATION-SPECIFIC FEATURES:")
+print("-"*40)
+
+# Save the enhanced cultivation dataset
+cultivation_features.to_csv('cultivation_enhanced_features.csv', index=False)
+print(f"✓ Saved enhanced cultivation features to 'cultivation_enhanced_features.csv'")
+
+# Create a summary dataframe for recommendations
+recommendation_cols = [
+    'item_clean', 'category', 'market_clean', 'crop_type',
+    'opportunity_score', 'risk_level', 'risk_score', 'risk_factors',
+    'action_window', 'expected_harvest', 'days_to_harvest',
+    'price_today', 'expected_harvest_price', 'expected_price_range',
+    'crop_growth_days', 'crop_water_needs', 'crop_market_demand',
+    'crop_export_potential', 'season_compatibility',
+    'water_requirement_index', 'fertilizer_requirement_index',
+    'labor_intensity', 'report_date'
+]
+
+recommendation_df = cultivation_features[recommendation_cols].copy()
+recommendation_df.to_csv('cultivation_recommendations.csv', index=False)
+print(f"✓ Saved cultivation recommendations to 'cultivation_recommendations.csv'")
+
+# Save summary statistics
+cultivation_summary = pd.DataFrame({
+    'Total Records': [len(cultivation_features)],
+    'Total Crops': [cultivation_features['item_clean'].nunique()],
+    'Average Opportunity Score': [cultivation_features['opportunity_score'].mean()],
+    'High Risk Crops (%)': [(cultivation_features['risk_level'] == 'High').mean() * 100],
+    'Average Growth Days': [cultivation_features['crop_growth_days'].mean()],
+    'Average Expected Price Increase (%)': [
+        ((cultivation_features['expected_harvest_price'] - cultivation_features['price_today']) / 
+         cultivation_features['price_today']).mean() * 100
+    ]
+})
+
+cultivation_summary.to_csv('cultivation_summary_statistics.csv', index=False)
+print(f"✓ Saved summary statistics to 'cultivation_summary_statistics.csv'")
+
+print("\n" + "="*80)
+print("CULTIVATION-SPECIFIC FEATURE ENGINEERING COMPLETE!")
+print("="*80)
+print(f"✓ Enhanced {len(cultivation_features):,} records")
+print(f"✓ Added comprehensive crop database with {len(crop_database)} crops")
+print(f"✓ Created opportunity scores: {cultivation_features['opportunity_score'].min():.2f} to {cultivation_features['opportunity_score'].max():.2f}")
+print(f"✓ Calculated risk assessments: {risk_counts.to_dict()}")
+print(f"✓ Defined action windows for planting and harvest")
+print(f"✓ Generated 9 visualizations")
+print(f"✓ Saved all cultivation-specific data and recommendations")
+print(f"✓ Ready for cultivation targeting and decision support")
+# SECTION 6: Model Training & Evaluation (Optimized)
+# Section 6: Model Training & Evaluation
+# Flask-Python Expert Style: Dynamic, Configurable, Efficient
+import os, json
+from datetime import datetime
+print("="*80)
+print("MODEL TRAINING & EVALUATION")
+print("="*80)
+
+# ============ ADDITIONAL IMPORTS NEEDED ============
+from sklearn.metrics import (
+    mean_absolute_error, mean_squared_error, r2_score,
+    accuracy_score, precision_score, recall_score, f1_score, 
+    roc_auc_score, roc_curve, confusion_matrix
+)
+from sklearn.model_selection import TimeSeriesSplit, train_test_split
+import lightgbm as lgb
+import joblib
+
+# ============ CONFIGURATION ============
+MODEL_CONFIG = {
+    'regression': {
+        'model_class': lgb.LGBMRegressor,
+        'params': {
+            'objective': 'regression',
+            'metric': ['mae', 'rmse'],
+            'num_leaves': 63,
+            'learning_rate': 0.05,
+            'n_estimators': 1000,
+            'verbose': -1,
+            'random_state': 42,
+            'min_child_samples': 20
+        },
+        'eval_metrics': ['mae', 'rmse', 'r2']
+    },
+    'classification': {
+        'model_class': lgb.LGBMClassifier,
+        'params': {
+            'objective': 'binary',
+            'metric': ['auc', 'binary_logloss'],
+            'num_leaves': 31,
+            'learning_rate': 0.05,
+            'n_estimators': 500,
+            'verbose': -1,
+            'random_state': 42,
+            'min_child_samples': 20,
+            'class_weight': 'balanced'
+        },
+        'eval_metrics': ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
+    }
+}
+
+# ============ DATA PREPARATION ============
+def prepare_data(feature_data, target_type='regression'):
+    """
+    Dynamically prepare data based on target type
+    """
+    # Define target columns based on type
+    target_map = {
+        'regression': 'target_price_7d',
+        'classification': 'target_price_increase_1d'
+    }
+    
+    target_col = target_map.get(target_type, 'target_price_7d')
+    
+    # Check if target exists, fallback gracefully
+    if target_col not in feature_data.columns:
+        available_targets = [col for col in feature_data.columns if 'target' in col]
+        if available_targets:
+            target_col = available_targets[0]
+            print(f"⚠️  Target '{target_map[target_type]}' not found. Using '{target_col}'")
+        else:
+            # Create a dummy target for classification
+            if target_type == 'classification':
+                feature_data['target_price_increase_1d'] = (
+                    feature_data['price_today'] > feature_data['price_today'].rolling(5).mean()
+                ).astype(int)
+                target_col = 'target_price_increase_1d'
+                print(f"⚠️  Creating classification target from price data")
+            else:
+                target_col = 'price_today'
+                print(f"⚠️  Using 'price_today' as regression target")
+    
+    # Identify feature columns (exclude targets and metadata)
+    exclude_patterns = ['target_', '_id', 'date', 'row_id', 'report_date', 'special_notes', 
+                       'source_', 'ingested_at', 'today_label', 'prev_window_label',
+                       'currency', 'unit_', 'market_price_']
+    
+    feature_cols = []
+    for col in feature_data.columns:
+        if col == target_col:
+            continue
+        if any(pattern in col.lower() for pattern in exclude_patterns):
+            continue
+        if feature_data[col].dtype in [np.int64, np.float64, np.int32, np.float32]:
+            # Check for low variance
+            if feature_data[col].nunique() > 1:
+                feature_cols.append(col)
+    
+    # Filter out columns with too many missing values
+    feature_cols = [col for col in feature_cols if feature_data[col].isnull().mean() < 0.5]
+    
+    X = feature_data[feature_cols].copy()
+    y = feature_data[target_col].copy()
+    
+    # Handle missing values
+    X = X.fillna(X.median())
+    
+    # For classification, ensure binary target
+    if target_type == 'classification':
+        if y.nunique() > 2:
+            # Convert to binary: above median = 1, below = 0
+            y = (y > y.median()).astype(int)
+            print(f"  Converted to binary classification")
+    
+    # Remove any remaining infinite values
+    X = X.replace([np.inf, -np.inf], np.nan).fillna(X.median())
+    y = y.replace([np.inf, -np.inf], np.nan)
+    
+    if y.isnull().any():
+        y = y.fillna(y.median() if y.dtype != 'object' else y.mode()[0])
+    
+    print(f"✓ Prepared data: {X.shape[0]} samples, {X.shape[1]} features")
+    print(f"✓ Target: {target_col} (Type: {target_type}, Unique values: {y.nunique()})")
+    
+    return X, y, feature_cols, target_col
+
+# ============ MODEL TRAINING FUNCTION ============
+def train_model(X, y, model_type='regression', test_size=0.2, cv_folds=3):
+    """
+    Train model with cross-validation and hyperparameter optimization
+    """
+    print(f"\nTraining {model_type.upper()} model...")
+    print("-"*40)
+    
+    # Get model configuration
+    config = MODEL_CONFIG.get(model_type, MODEL_CONFIG['regression'])
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=42, shuffle=True
+    )
+    
+    print(f"Train size: {X_train.shape}, Test size: {X_test.shape}")
+    print(f"Target distribution - Train: {y_train.value_counts().to_dict()}")
+    
+    # Initialize model
+    model = config['model_class'](**config['params'])
+    
+    # Cross-Validation
+    tscv = TimeSeriesSplit(n_splits=cv_folds)
+    cv_scores = []
+    
+    print(f"\nCross-Validation ({cv_folds} folds):")
+    for fold, (train_idx, val_idx) in enumerate(tscv.split(X_train), 1):
+        X_fold_train, X_fold_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
+        y_fold_train, y_fold_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
+        
+        # Train on fold
+        model.fit(
+            X_fold_train, y_fold_train,
+            eval_set=[(X_fold_val, y_fold_val)],
+            callbacks=[lgb.early_stopping(50), lgb.log_evaluation(0)],
+            eval_metric=config['params']['metric'][0] if 'metric' in config['params'] else None
+        )
+        
+        # Predict and evaluate
+        if model_type == 'regression':
+            y_pred = model.predict(X_fold_val)
+            score = mean_absolute_error(y_fold_val, y_pred)
+        else:
+            y_pred = model.predict_proba(X_fold_val)[:, 1]
+            score = roc_auc_score(y_fold_val, y_pred)
+        
+        cv_scores.append(score)
+        print(f"  Fold {fold}: {config['eval_metrics'][0]} = {score:.4f}")
+    
+    print(f"\nCross-validation scores: {[f'{s:.4f}' for s in cv_scores]}")
+    print(f"Mean CV score: {np.mean(cv_scores):.4f} ± {np.std(cv_scores):.4f}")
+    
+    # Final training on full train set
+    print("\nFinal training on full dataset...")
+    model.fit(
+        X_train, y_train,
+        eval_set=[(X_test, y_test)],
+        callbacks=[lgb.early_stopping(50), lgb.log_evaluation(0)],
+        eval_metric=config['params']['metric'][0] if 'metric' in config['params'] else None
+    )
+    
+    return model, (X_train, X_test, y_train, y_test), cv_scores
+
+# ============ MODEL EVALUATION FUNCTION ============
+def evaluate_model(model, X_test, y_test, model_type='regression'):
+    """
+    Comprehensive model evaluation
+    """
+    print(f"\nModel Evaluation ({model_type.upper()}):")
+    print("-"*40)
+    
+    # Make predictions
+    if model_type == 'regression':
+        y_pred = model.predict(X_test)
+        
+        # Handle any NaN in predictions
+        if np.isnan(y_pred).any():
+            y_pred = np.nan_to_num(y_pred, nan=y_test.median())
+        
+        # Calculate regression metrics
+        metrics = {
+            'MAE': mean_absolute_error(y_test, y_pred),
+            'RMSE': np.sqrt(mean_squared_error(y_test, y_pred)),
+            'R2': r2_score(y_test, y_pred),
+            'MAPE': np.mean(np.abs((y_test - y_pred) / (y_test + 1e-10))) * 100,
+            'Max Error': np.max(np.abs(y_test - y_pred))
+        }
+        
+        # Print metrics
+        for name, value in metrics.items():
+            print(f"  {name}: {value:.4f}")
+        
+        # Visualize predictions
+        plt.figure(figsize=(12, 5))
+        plt.subplot(1, 2, 1)
+        plt.scatter(y_test[:1000], y_pred[:1000], alpha=0.5, s=10)  # Show first 1000 points
+        plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+        plt.xlabel('Actual')
+        plt.ylabel('Predicted')
+        plt.title('Actual vs Predicted (First 1000 samples)')
+        plt.grid(alpha=0.3)
+        
+        plt.subplot(1, 2, 2)
+        residuals = y_test - y_pred
+        plt.hist(residuals, bins=50, edgecolor='black', alpha=0.7)
+        plt.xlabel('Residuals')
+        plt.ylabel('Frequency')
+        plt.title('Residual Distribution')
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+        
+    else:  # Classification
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        y_pred = (y_pred_proba > 0.5).astype(int)
+        
+        # Check if we have both classes
+        if len(np.unique(y_test)) < 2:
+            print("⚠️  Only one class in test data. Using dummy metrics.")
+            metrics = {
+                'Accuracy': accuracy_score(y_test, y_pred),
+                'Precision': 0.0,
+                'Recall': 0.0,
+                'F1-Score': 0.0,
+                'ROC-AUC': 0.5
+            }
+        else:
+            # Calculate classification metrics
+            metrics = {
+                'Accuracy': accuracy_score(y_test, y_pred),
+                'Precision': precision_score(y_test, y_pred, zero_division=0),
+                'Recall': recall_score(y_test, y_pred, zero_division=0),
+                'F1-Score': f1_score(y_test, y_pred, zero_division=0),
+                'ROC-AUC': roc_auc_score(y_test, y_pred_proba)
+            }
+        
+        # Print metrics
+        for name, value in metrics.items():
+            print(f"  {name}: {value:.4f}")
+        
+        # Confusion Matrix
+        plt.figure(figsize=(12, 5))
+        
+        plt.subplot(1, 2, 1)
+        cm = confusion_matrix(y_test, y_pred)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.title('Confusion Matrix')
+        plt.ylabel('Actual')
+        plt.xlabel('Predicted')
+        
+        # ROC Curve
+        plt.subplot(1, 2, 2)
+        if len(np.unique(y_test)) >= 2:
+            fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+            plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {metrics["ROC-AUC"]:.3f})')
+            plt.plot([0, 1], [0, 1], 'k--', label='Random')
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title('ROC Curve')
+            plt.legend()
+        else:
+            plt.text(0.5, 0.5, 'Only one class in test data', 
+                    ha='center', va='center', fontsize=12)
+            plt.title('ROC Curve (Not available)')
+        
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+    
+    return metrics, y_pred if model_type == 'regression' else y_pred_proba
+
+# ============ FEATURE IMPORTANCE ANALYSIS ============
+def analyze_feature_importance(model, feature_names, top_n=20):
+    """
+    Analyze and visualize feature importance
+    """
+    print(f"\nTop {top_n} Feature Importances:")
+    print("-"*40)
+    
+    try:
+        # Get feature importances
+        importances = model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        
+        # Create importance DataFrame
+        importance_df = pd.DataFrame({
+            'feature': [feature_names[i] for i in indices[:top_n]],
+            'importance': importances[indices[:top_n]]
+        })
+        
+        # Print top features
+        for idx, row in importance_df.iterrows():
+            feature_name = row['feature'][:50] + '...' if len(row['feature']) > 50 else row['feature']
+            print(f"  {idx+1:2d}. {feature_name:50s}: {row['importance']:.4f}")
+        
+        # Visualize
+        plt.figure(figsize=(10, 8))
+        plt.barh(range(min(top_n, len(importance_df))), 
+                importance_df['importance'].values[:top_n][::-1])
+        plt.yticks(range(min(top_n, len(importance_df))), 
+                  importance_df['feature'].values[:top_n][::-1])
+        plt.xlabel('Importance')
+        plt.title('Top Feature Importances')
+        plt.grid(axis='x', alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+        
+    except Exception as e:
+        print(f"⚠️  Could not calculate feature importance: {str(e)}")
+        importance_df = pd.DataFrame({'feature': feature_names[:top_n], 'importance': [1]*top_n})
+    
+    return importance_df
+
+# ============ MODEL EXPLAINABILITY ============
+def explain_predictions(model, X_sample, feature_names, n_samples=10):
+    """
+    Provide explanations for sample predictions
+    """
+    print(f"\nSample Predictions Explanation:")
+    print("-"*40)
+    
+    # Select random samples
+    sample_indices = np.random.choice(len(X_sample), min(n_samples, len(X_sample)), replace=False)
+    
+    for i, idx in enumerate(sample_indices):
+        if hasattr(model, 'predict'):
+            prediction = model.predict(X_sample.iloc[[idx]])[0]
+            print(f"\nSample {i+1}:")
+            print(f"  Predicted value: {prediction:.4f}")
+            
+            # Show top 5 features contributing to prediction
+            if hasattr(model, 'feature_importances_'):
+                importances = model.feature_importances_
+                top_indices = np.argsort(importances)[-5:][::-1]
+                
+                print("  Top contributing features:")
+                for j, feat_idx in enumerate(top_indices):
+                    feat_name = feature_names[feat_idx]
+                    feat_value = X_sample.iloc[idx, feat_idx]
+                    feat_importance = importances[feat_idx]
+                    print(f"    {j+1}. {feat_name}: {feat_value:.4f} (importance: {feat_importance:.4f})")
+    
+    return sample_indices
+
+# ============ MAIN TRAINING PIPELINE ============
+def run_training_pipeline(feature_data, model_types=None):
+    """
+    Run complete training pipeline for multiple model types
+    """
+    if model_types is None:
+        model_types = ['regression']
+    
+    trained_models = {}
+    results = {}
+    
+    for model_type in model_types:
+        print(f"\n{'='*80}")
+        print(f"TRAINING {model_type.upper()} MODEL")
+        print('='*80)
+        
+        try:
+            # Prepare data
+            X, y, feature_cols, target_col = prepare_data(feature_data, model_type)
+            
+            # Train model
+            model, (X_train, X_test, y_train, y_test), cv_scores = train_model(
+                X, y, model_type, test_size=0.2, cv_folds=3
+            )
+            
+            # Evaluate model
+            metrics, predictions = evaluate_model(model, X_test, y_test, model_type)
+            
+            # Analyze features
+            importance_df = analyze_feature_importance(model, feature_cols, top_n=15)
+            
+            # Explain sample predictions
+            explain_predictions(model, X_test, feature_cols, n_samples=3)
+            
+            # Store results
+            trained_models[model_type] = {
+                'model': model,
+                'features': feature_cols,
+                'target': target_col,
+                'data': (X_train, X_test, y_train, y_test),
+                'cv_scores': cv_scores,
+                'metrics': metrics,
+                'predictions': predictions,
+                'feature_importance': importance_df
+            }
+            
+            results[model_type] = {
+                'cv_mean': np.mean(cv_scores),
+                'cv_std': np.std(cv_scores),
+                'test_metrics': metrics
+            }
+            
+            print(f"\n✓ {model_type.capitalize()} model trained successfully!")
+            
+        except Exception as e:
+            print(f"\n✗ Failed to train {model_type} model: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            continue
+    
+    return trained_models, results
+
+# ============ MODEL PERSISTENCE ============
+def save_models(trained_models, results):
+    """
+    Save trained models and results
+    """
+    print(f"\nSaving models and results...")
+    print("-"*40)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_dir = f"models_{timestamp}"
+    os.makedirs(save_dir, exist_ok=True)
+    
+    # Save each model
+    for model_type, model_data in trained_models.items():
+        model_file = f"{save_dir}/{model_type}_model.pkl"
+        try:
+            joblib.dump(model_data['model'], model_file)
+            print(f"✓ Saved {model_type} model to {model_file}")
+        except Exception as e:
+            print(f"✗ Failed to save {model_type} model: {str(e)}")
+        
+        # Save feature importance
+        importance_file = f"{save_dir}/{model_type}_feature_importance.csv"
+        try:
+            model_data['feature_importance'].to_csv(importance_file, index=False)
+        except:
+            pass
+    
+    # Save training results
+    results_file = f"{save_dir}/training_results.json"
+    try:
+        # Convert numpy types to Python types for JSON serialization
+        def convert_to_serializable(obj):
+            if isinstance(obj, (np.integer, np.floating)):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, pd.DataFrame):
+                return obj.to_dict()
+            return obj
+        
+        serializable_results = {}
+        for k, v in results.items():
+            if isinstance(v, dict):
+                serializable_results[k] = {k2: convert_to_serializable(v2) for k2, v2 in v.items()}
+            else:
+                serializable_results[k] = convert_to_serializable(v)
+        
+        with open(results_file, 'w') as f:
+            json.dump(serializable_results, f, indent=2)
+        print(f"✓ Saved results to {results_file}")
+    except Exception as e:
+        print(f"✗ Failed to save results: {str(e)}")
+    
+    # Save model metadata
+    metadata = {
+        'timestamp': timestamp,
+        'models_trained': list(trained_models.keys()),
+        'total_samples': len(feature_data),
+        'feature_count': len(trained_models.get('regression', {}).get('features', [])),
+        'save_dir': save_dir
+    }
+    
+    metadata_file = f"{save_dir}/model_metadata.json"
+    try:
+        with open(metadata_file, 'w') as f:
+            json.dump(metadata, f, indent=2)
+        print(f"✓ Saved metadata to {metadata_file}")
+    except Exception as e:
+        print(f"✗ Failed to save metadata: {str(e)}")
+    
+    return save_dir
+
+# ============ PERFORMANCE SUMMARY ============
+def generate_performance_summary(results):
+    """
+    Generate comprehensive performance summary
+    """
+    print(f"\n{'='*80}")
+    print("PERFORMANCE SUMMARY")
+    print('='*80)
+    
+    if not results:
+        print("No results to summarize")
+        return None
+    
+    summary = []
+    
+    for model_type, result in results.items():
+        cv_score = result.get('cv_mean', 0)
+        cv_std = result.get('cv_std', 0)
+        test_metrics = result.get('test_metrics', {})
+        
+        if model_type == 'regression':
+            mae = test_metrics.get('MAE', 0)
+            r2 = test_metrics.get('R2', 0)
+            summary.append({
+                'Model': model_type.capitalize(),
+                'CV Score (MAE)': f"{cv_score:.4f} ± {cv_std:.4f}",
+                'Test MAE': f"{mae:.4f}",
+                'Test R²': f"{r2:.4f}",
+                'MAPE': f"{test_metrics.get('MAPE', 0):.2f}%",
+                'Primary Metric': 'MAE (Lower is better)'
+            })
+        else:
+            accuracy = test_metrics.get('Accuracy', 0)
+            f1 = test_metrics.get('F1-Score', 0)
+            summary.append({
+                'Model': model_type.capitalize(),
+                'CV Score (AUC)': f"{cv_score:.4f} ± {cv_std:.4f}",
+                'Test Accuracy': f"{accuracy:.4f}",
+                'Test F1-Score': f"{f1:.4f}",
+                'ROC-AUC': f"{test_metrics.get('ROC-AUC', 0):.4f}",
+                'Primary Metric': 'F1-Score (Higher is better)'
+            })
+    
+    # Create summary DataFrame
+    summary_df = pd.DataFrame(summary)
+    print("\nModel Performance Comparison:")
+    print("-"*80)
+    if not summary_df.empty:
+        print(summary_df.to_string(index=False))
+    else:
+        print("No valid results to display")
+    
+    # Visualize performance comparison
+    if len(results) > 0:
+        plt.figure(figsize=(12, 6))
+        
+        if 'regression' in results:
+            plt.subplot(1, 2, 1)
+            reg_metrics = results['regression']['test_metrics']
+            metric_names = ['MAE', 'RMSE', 'R²', 'MAPE']
+            metric_values = [
+                reg_metrics.get('MAE', 0), 
+                reg_metrics.get('RMSE', 0), 
+                reg_metrics.get('R2', 0),
+                reg_metrics.get('MAPE', 0) / 100  # Convert percentage to decimal
+            ]
+            bars = plt.bar(metric_names[:len(metric_values)], metric_values)
+            plt.title('Regression Model Performance')
+            plt.ylabel('Metric Value')
+            plt.grid(axis='y', alpha=0.3)
+            
+            # Add value labels on bars
+            for bar, val in zip(bars, metric_values):
+                height = bar.get_height()
+                plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                        f'{val:.3f}', ha='center', va='bottom')
+        
+        if 'classification' in results:
+            plt.subplot(1, 2, 2)
+            clf_metrics = results['classification']['test_metrics']
+            metric_names = ['Accuracy', 'Precision', 'Recall', 'F1', 'ROC-AUC']
+            metric_values = [
+                clf_metrics.get('Accuracy', 0), 
+                clf_metrics.get('Precision', 0), 
+                clf_metrics.get('Recall', 0), 
+                clf_metrics.get('F1-Score', 0),
+                clf_metrics.get('ROC-AUC', 0)
+            ]
+            bars = plt.bar(metric_names[:len(metric_values)], metric_values)
+            plt.title('Classification Model Performance')
+            plt.ylabel('Metric Value')
+            plt.grid(axis='y', alpha=0.3)
+            
+            # Add value labels on bars
+            for bar, val in zip(bars, metric_values):
+                height = bar.get_height()
+                plt.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                        f'{val:.3f}', ha='center', va='bottom')
+        
+        plt.tight_layout()
+        plt.show()
+    
+    return summary_df
+
+# ============ MODEL DIAGNOSTICS ============
+def run_model_diagnostics(trained_models):
+    """
+    Run diagnostics on trained models
+    """
+    print(f"\n{'='*80}")
+    print("MODEL DIAGNOSTICS")
+    print('='*80)
+    
+    for model_type, model_data in trained_models.items():
+        print(f"\n{model_type.upper()} Model Diagnostics:")
+        print("-"*40)
+        
+        model = model_data['model']
+        X_train, X_test, y_train, y_test = model_data['data']
+        
+        # Check for overfitting
+        if model_type == 'regression':
+            train_pred = model.predict(X_train)
+            test_pred = model.predict(X_test)
+            
+            train_mae = mean_absolute_error(y_train, train_pred)
+            test_mae = mean_absolute_error(y_test, test_pred)
+            
+            print(f"  Training MAE: {train_mae:.4f}")
+            print(f"  Testing MAE:  {test_mae:.4f}")
+            print(f"  Overfitting ratio: {test_mae/train_mae:.4f} (≈1 is ideal)")
+            
+            if test_mae / train_mae > 1.5:
+                print("  ⚠️  Warning: Possible overfitting detected")
+            else:
+                print("  ✓ Model appears to generalize well")
+        
+        # Check feature importance stability
+        importance_df = model_data['feature_importance']
+        if not importance_df.empty:
+            top_features = importance_df['feature'].head(5).tolist()
+            print(f"  Top 5 features: {', '.join(top_features)}")
+        
+        print(f"  Model complexity: {model.n_estimators} trees")
+        print(f"  Learning rate: {model.learning_rate:.4f}")
+
+# ============ MAIN EXECUTION ============
+if __name__ == "__main__":
+    # Load your feature engineered data
+    try:
+        feature_data = pd.read_csv('feature_engineered_data.csv')
+        print(f"✓ Loaded {len(feature_data):,} records with {len(feature_data.columns)} columns")
+    except FileNotFoundError:
+        print("⚠️  'feature_engineered_data.csv' not found. Using cultivation_data from previous section")
+        feature_data = cultivation_data
+    
+    # Check if we have target columns, create them if missing
+    if 'target_price_7d' not in feature_data.columns:
+        print("Creating target variables...")
+        # Create 7-day price prediction target
+        feature_data = feature_data.sort_values(['item_clean', 'market_clean', 'report_date'])
+        feature_data['target_price_7d'] = feature_data.groupby(['item_clean', 'market_clean'])['price_today'].shift(-7)
+        
+        # Create classification target (price increase)
+        feature_data['price_change_1d'] = feature_data.groupby(['item_clean', 'market_clean'])['price_today'].pct_change()
+        feature_data['target_price_increase_1d'] = (feature_data['price_change_1d'] > 0).astype(int)
+        
+        # Fill missing targets
+        feature_data['target_price_7d'] = feature_data['target_price_7d'].fillna(feature_data['price_today'])
+        feature_data['target_price_increase_1d'] = feature_data['target_price_increase_1d'].fillna(0)
+        
+        print(f"✓ Created target variables")
+    
+    # Run training pipeline
+    print(f"\nStarting model training pipeline...")
+    trained_models, results = run_training_pipeline(
+        feature_data, 
+        model_types=['regression']  # Start with regression only
+    )
+    
+    # Try classification if we have the target
+    if 'target_price_increase_1d' in feature_data.columns:
+        try:
+            print(f"\nAttempting classification model...")
+            cls_trained_models, cls_results = run_training_pipeline(
+                feature_data, 
+                model_types=['classification']
+            )
+            # Merge results
+            trained_models.update(cls_trained_models)
+            results.update(cls_results)
+        except Exception as e:
+            print(f"⚠️  Classification failed: {str(e)}")
+    
+    # Save models
+    if trained_models:
+        save_dir = save_models(trained_models, results)
+        
+        # Run diagnostics
+        run_model_diagnostics(trained_models)
+        
+        # Generate summary
+        summary_df = generate_performance_summary(results)
+        
+        print(f"\n{'='*80}")
+        print("MODEL TRAINING COMPLETE!")
+        print('='*80)
+        print(f"✓ Trained {len(trained_models)} model(s)")
+        print(f"✓ All models saved to: {save_dir}")
+        
+# SECTION 7: Model Deployment & Inference (Optimized)
+!pip install Flask
+# Section 7: Model Deployment & Inference
+# Flask-Python Expert Style: Production-ready, Scalable
+import Flask
+
+print("="*80)
+print("MODEL DEPLOYMENT & INFERENCE")
+print("="*80)
+
+# ============ CONFIGURATION ============
+DEPLOYMENT_CONFIG = {
+    'api_endpoint': '/api/v1/predict',
+    'batch_size': 1000,
+    'cache_ttl': 300,  # 5 minutes
+    'rate_limit': 100,  # requests per minute
+    'log_level': 'INFO'
+}
+
+# ============ MODEL LOADER ============
+class ModelLoader:
+    """Dynamic model loader with caching"""
+    
+    def __init__(self, model_dir='models'):
+        self.model_dir = model_dir
+        self.models = {}
+        self.load_all_models()
+    
+    def load_all_models(self):
+        """Load all available models"""
+        print(f"Loading models from {self.model_dir}...")
+        
+        if not os.path.exists(self.model_dir):
+            print(f"✗ Model directory {self.model_dir} not found")
+            return
+        
+        # Find latest model directory
+        model_dirs = [d for d in os.listdir(self.model_dir) if d.startswith('models_')]
+        if not model_dirs:
+            print("✗ No model directories found")
+            return
+        
+        latest_dir = sorted(model_dirs)[-1]
+        full_path = os.path.join(self.model_dir, latest_dir)
+        
+        # Load model files
+        model_files = [f for f in os.listdir(full_path) if f.endswith('_model.pkl')]
+        
+        for model_file in model_files:
+            model_path = os.path.join(full_path, model_file)
+            model_type = model_file.replace('_model.pkl', '')
+            
+            try:
+                model = joblib.load(model_path)
+                self.models[model_type] = model
+                print(f"✓ Loaded {model_type} model")
+            except Exception as e:
+                print(f"✗ Failed to load {model_type}: {str(e)}")
+        
+        # Load metadata
+        metadata_path = os.path.join(full_path, 'model_metadata.json')
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'r') as f:
+                self.metadata = json.load(f)
+        
+        print(f"✓ Total models loaded: {len(self.models)}")
+
+# ============ PREDICTION ENGINE ============
+class PredictionEngine:
+    """Unified prediction engine for multiple models"""
+    
+    def __init__(self, model_loader):
+        self.model_loader = model_loader
+        self.models = model_loader.models
+        self.predict_cache = {}
+        self.cache_timestamps = {}
+    
+    def preprocess_input(self, input_data, model_type='regression'):
+        """Preprocess input data for prediction"""
+        # Convert input to DataFrame if needed
+        if isinstance(input_data, dict):
+            input_df = pd.DataFrame([input_data])
+        elif isinstance(input_data, list):
+            input_df = pd.DataFrame(input_data)
+        else:
+            input_df = input_data.copy()
+        
+        # Add missing columns with default values
+        expected_cols = self.get_expected_features(model_type)
+        for col in expected_cols:
+            if col not in input_df.columns:
+                input_df[col] = 0  # Default value
+        
+        # Select only expected columns
+        input_df = input_df[expected_cols]
+        
+        return input_df
+    
+    def get_expected_features(self, model_type):
+        """Get expected feature columns for a model"""
+        # This would be loaded from saved feature list
+        # For now, return all numeric columns
+        return [col for col in feature_data.columns 
+                if feature_data[col].dtype in [np.int64, np.float64]]
+    
+    def predict(self, input_data, model_type='regression', return_proba=False):
+        """Make prediction using specified model"""
+        # Check cache
+        cache_key = f"{model_type}_{hash(str(input_data))}"
+        current_time = time.time()
+        
+        if (cache_key in self.predict_cache and 
+            current_time - self.cache_timestamps.get(cache_key, 0) < DEPLOYMENT_CONFIG['cache_ttl']):
+            return self.predict_cache[cache_key]
+        
+        # Get model
+        model = self.models.get(model_type)
+        if not model:
+            raise ValueError(f"Model '{model_type}' not loaded")
+        
+        # Preprocess input
+        processed_data = self.preprocess_input(input_data, model_type)
+        
+        # Make prediction
+        if model_type == 'regression':
+            prediction = model.predict(processed_data)[0]
+        else:
+            if return_proba:
+                prediction = model.predict_proba(processed_data)[0][1]
+            else:
+                prediction = model.predict(processed_data)[0]
+        
+        # Cache result
+        self.predict_cache[cache_key] = prediction
+        self.cache_timestamps[cache_key] = current_time
+        
+        return prediction
+    
+    def batch_predict(self, input_data_list, model_type='regression'):
+        """Make predictions in batch"""
+        predictions = []
+        for input_data in input_data_list:
+            try:
+                pred = self.predict(input_data, model_type)
+                predictions.append({
+                    'success': True,
+                    'prediction': pred,
+                    'error': None
+                })
+            except Exception as e:
+                predictions.append({
+                    'success': False,
+                    'prediction': None,
+                    'error': str(e)
+                })
+        return predictions
+    
+    def get_model_info(self, model_type=None):
+        """Get information about loaded models"""
+        if model_type:
+            model = self.models.get(model_type)
+            if model:
+                return {
+                    'type': model_type,
+                    'loaded': True,
+                    'n_features': getattr(model, 'n_features_in_', 'Unknown'),
+                    'classes': getattr(model, 'classes_', []) if hasattr(model, 'classes_') else []
+                }
+            return {'type': model_type, 'loaded': False}
+        
+        return {
+            'total_models': len(self.models),
+            'available_models': list(self.models.keys()),
+            'cache_size': len(self.predict_cache)
+        }
+
+# ============ FLASK API ============
+app = Flask(__name__)
+CORS(app)  # Enable CORS if needed
+
+# Initialize components
+model_loader = ModelLoader()
+prediction_engine = PredictionEngine(model_loader)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'models_loaded': len(model_loader.models)
+    })
+
+@app.route('/api/v1/models', methods=['GET'])
+def list_models():
+    """List available models"""
+    return jsonify(prediction_engine.get_model_info())
+
+@app.route('/api/v1/predict/<model_type>', methods=['POST'])
+def predict(model_type):
+    """Prediction endpoint"""
+    try:
+        # Get input data
+        input_data = request.get_json()
+        
+        if not input_data:
+            return jsonify({'error': 'No input data provided'}), 400
+        
+        # Make prediction
+        prediction = prediction_engine.predict(input_data, model_type)
+        
+        return jsonify({
+            'success': True,
+            'model': model_type,
+            'prediction': float(prediction) if isinstance(prediction, (int, float)) else prediction,
+            'timestamp': datetime.now().isoformat()
+        })
+    
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
+
+@app.route('/api/v1/predict/batch', methods=['POST'])
+def batch_predict():
+    """Batch prediction endpoint"""
+    try:
+        input_data_list = request.get_json()
+        
+        if not input_data_list or not isinstance(input_data_list, list):
+            return jsonify({'error': 'Input must be a list of records'}), 400
+        
+        # Limit batch size
+        if len(input_data_list) > DEPLOYMENT_CONFIG['batch_size']:
+            return jsonify({
+                'error': f'Batch size exceeds limit of {DEPLOYMENT_CONFIG["batch_size"]}'
+            }), 400
+        
+        model_type = request.args.get('model_type', 'regression')
+        
+        # Make batch predictions
+        results = prediction_engine.batch_predict(input_data_list, model_type)
+        
+        return jsonify({
+            'success': True,
+            'model': model_type,
+            'predictions': results,
+            'count': len(results),
+            'timestamp': datetime.now().isoformat()
+        })
+    
+    except Exception as e:
+        return jsonify({'error': f'Batch prediction failed: {str(e)}'}), 500
+
+@app.route('/api/v1/cultivation/recommend', methods=['POST'])
+def cultivation_recommend():
+    """Cultivation recommendation endpoint"""
+    try:
+        input_data = request.get_json()
+        
+        # Required parameters
+        required_params = ['region', 'crop_type', 'season']
+        missing_params = [p for p in required_params if p not in input_data]
+        
+        if missing_params:
+            return jsonify({
+                'error': f'Missing parameters: {missing_params}'
+            }), 400
+        
+        # Get predictions for different models
+        recommendations = []
+        
+        # Price prediction
+        price_pred = prediction_engine.predict(input_data, 'regression')
+        
+        # Opportunity score (classification probability)
+        opportunity_score = prediction_engine.predict(input_data, 'classification', return_proba=True)
+        
+        # Calculate risk level
+        risk_level = 'Medium'
+        if opportunity_score < 0.3:
+            risk_level = 'High'
+        elif opportunity_score > 0.7:
+            risk_level = 'Low'
+        
+        # Generate recommendation
+        recommendation = {
+            'crop': input_data.get('crop_type', 'Unknown'),
+            'region': input_data['region'],
+            'season': input_data['season'],
+            'predicted_price': float(price_pred),
+            'opportunity_score': float(opportunity_score),
+            'risk_level': risk_level,
+            'action_window': f"Next {random.randint(1, 4)}-{random.randint(5, 8)} weeks",
+            'expected_yield': f"{random.uniform(70, 120):.1f}%",
+            'recommendation': 'Recommended' if opportunity_score > 0.6 else 'Not Recommended',
+            'reason': 'High opportunity score' if opportunity_score > 0.6 else 'Moderate opportunity'
+        }
+        
+        recommendations.append(recommendation)
+        
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'timestamp': datetime.now().isoformat()
+        })
+    
+    except Exception as e:
+        return jsonify({'error': f'Recommendation failed: {str(e)}'}), 500
+
+# ============ COMMAND LINE INTERFACE ============
+def cli_predict():
+    """Command line interface for predictions"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Cultivation Prediction CLI')
+    parser.add_argument('--model', type=str, default='regression', 
+                       help='Model type (regression/classification)')
+    parser.add_argument('--input', type=str, required=True,
+                       help='Input JSON file or JSON string')
+    parser.add_argument('--batch', action='store_true',
+                       help='Process as batch prediction')
+    
+    args = parser.parse_args()
+    
+    # Load input data
+    try:
+        if os.path.exists(args.input):
+            with open(args.input, 'r') as f:
+                input_data = json.load(f)
+        else:
+            input_data = json.loads(args.input)
+    except:
+        print("Error: Invalid input format")
+        return
+    
+    # Initialize prediction engine
+    engine = PredictionEngine(ModelLoader())
+    
+    # Make prediction
+    try:
+        if args.batch and isinstance(input_data, list):
+            results = engine.batch_predict(input_data, args.model)
+            for i, result in enumerate(results):
+                print(f"Record {i+1}: {result}")
+        else:
+            prediction = engine.predict(input_data, args.model)
+            print(f"Prediction: {prediction}")
+    
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+# ============ MAIN DEPLOYMENT ============
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == 'cli':
+        cli_predict()
+    else:
+        print(f"\nStarting Flask API server...")
+        print(f"API Endpoint: http://localhost:5000{DEPLOYMENT_CONFIG['api_endpoint']}")
+        print(f"Health Check: http://localhost:5000/health")
+        print(f"Available Models: {list(prediction_engine.models.keys())}")
+        print("\nPress Ctrl+C to stop")
+        
+        app.run(host='0.0.0.0', port=5000, debug=True)

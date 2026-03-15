@@ -1,0 +1,671 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction History - AgriSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-card {
+        border-left: 5px solid #6c757d;
+        transition: transform 0.3s;
+    }
+    .history-card:hover {
+        transform: translateY(-3px);
+    }
+    .component-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    .component-1 { background: #d4edda; color: #155724; }
+    .component-2 { background: #cce5ff; color: #004085; }
+    .component-3 { background: #fff3cd; color: #856404; }
+    .component-4 { background: #d1ecf1; color: #0c5460; }
+    .filter-badge {
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .filter-badge.active {
+        background-color: #007bff !important;
+        color: white !important;
+    }
+    /* Toast notifications */
+    .export-toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1060;
+        min-width: 300px;
+        animation: slideIn 0.5s ease;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-success .toast-header {
+        background-color: #198754 !important;
+    }
+    .toast-error .toast-header {
+        background-color: #dc3545 !important;
+    }
+    .toast-warning .toast-header {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+    .toast-info .toast-header {
+        background-color: #0dcaf0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                    <li class="breadcrumb-item active">Prediction History</li>
+                </ol>
+            </nav>
+            <h1 class="display-5 mb-4">
+                <i class="fas fa-history text-secondary"></i> Prediction History
+            </h1>
+            <p class="lead">Review your past predictions and analyses</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title mb-3"><i class="fas fa-filter"></i> Filter Predictions</h5>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge filter-badge bg-secondary p-2 active" data-filter="all">
+                            <i class="fas fa-layer-group"></i> All Predictions
+                        </span>
+                        <span class="badge filter-badge component-1 p-2" data-filter="price_demand">
+                            <i class="fas fa-chart-line"></i> Price & Demand
+                        </span>
+                        <span class="badge filter-badge component-2 p-2" data-filter="market_ranking">
+                            <i class="fas fa-map-marked-alt"></i> Market Ranking
+                        </span>
+                        <span class="badge filter-badge component-3 p-2" data-filter="cultivation_targeting">
+                            <i class="fas fa-seedling"></i> Cultivation
+                        </span>
+                        <span class="badge filter-badge component-4 p-2" data-filter="yield_quality">
+                            <i class="fas fa-camera"></i> Yield Quality
+                        </span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Date Range</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="dateFrom">
+                                <span class="input-group-text">to</span>
+                                <input type="date" class="form-control" id="dateTo">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search predictions...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="applyFilters()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2">Total Predictions</h6>
+                    <h2 id="totalCount" class="card-title">{{ history|length }}</h2>
+                    <small class="opacity-75">All time</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2">Profitable Strategy</h6>
+                    <h2 id="profitableCount" class="card-title">{{ history|selectattr('component', 'equalto', 'profitable_strategy')|list|length }}</h2>
+                    <small class="opacity-75">Component 5</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2">Market Rankings</h6>
+                    <h2 id="marketCount" class="card-title">{{ history|selectattr('component', 'equalto', 'market_ranking')|list|length }}</h2>
+                    <small class="opacity-75">Component 2</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h6 class="card-subtitle mb-2">Cultivation Plans</h6>
+                    <h2 id="cultivationCount" class="card-title">{{ history|selectattr('component', 'equalto', 'cultivation_targeting')|list|length }}</h2>
+                    <small class="opacity-75">Component 3</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History List -->
+    <div class="row">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Recent Predictions</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportHistory('csv')">
+                                <i class="fas fa-file-csv text-success me-2"></i> CSV Format
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportHistory('json')">
+                                <i class="fas fa-file-code text-primary me-2"></i> JSON Format
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportHistory('pdf')">
+                                <i class="fas fa-file-pdf text-danger me-2"></i> PDF Report
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if history %}
+                    <div class="list-group" id="historyList">
+                        {% for prediction in history %}
+                        <div class="list-group-item history-card mb-3"
+                             data-component="{{ prediction.component }}"
+                             data-timestamp="{{ prediction.timestamp.strftime('%Y-%m-%d') if prediction.timestamp is string else prediction.timestamp }}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <span class="component-badge component-{{
+                                        '1' if prediction.component == 'price_demand'
+                                        else '2' if prediction.component == 'market_ranking'
+                                        else '3' if prediction.component == 'cultivation_targeting'
+                                        else '4'
+                                    }}">
+                                        {% if prediction.component == 'price_demand' %}
+                                        <i class="fas fa-chart-line"></i> Price & Demand
+                                        {% elif prediction.component == 'market_ranking' %}
+                                        <i class="fas fa-map-marked-alt"></i> Market Ranking
+                                        {% elif prediction.component == 'cultivation_targeting' %}
+                                        <i class="fas fa-seedling"></i> Cultivation Targeting
+                                        {% else %}
+                                        <i class="fas fa-camera"></i> Yield Quality
+                                        {% endif %}
+                                    </span>
+                                    <small class="text-muted ms-2">
+                                        <i class="fas fa-clock"></i>
+                                        {% if prediction.timestamp is string %}
+                                            {{ prediction.timestamp }}
+                                        {% else %}
+                                            {{ prediction.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deletePrediction('{{ prediction._id }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('{{ prediction._id }}')">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-2">
+                                {% if prediction.component == 'price_demand' %}
+                                <p class="mb-1">
+                                    {% if prediction.input and prediction.input.item_standard %}
+                                        <strong>{{ prediction.input.item_standard }}</strong> at
+                                    {% endif %}
+                                    {% if prediction.input and prediction.input.market %}
+                                        <strong>{{ prediction.input.market }}</strong> |
+                                    {% endif %}
+                                    {% if prediction.output and prediction.output.predicted_price %}
+                                        Predicted: Rs. {{ prediction.output.predicted_price }}
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {% if prediction.output and prediction.output.price_trend %}
+                                        Trend: {{ prediction.output.price_trend }} |
+                                    {% endif %}
+                                    {% if prediction.output and prediction.output.demand_index %}
+                                        Demand Index: {{ prediction.output.demand_index }}
+                                    {% endif %}
+                                </small>
+
+                                {% elif prediction.component == 'market_ranking' %}
+                                <p class="mb-1">
+                                    {% if prediction.input and prediction.input.item %}
+                                        <strong>{{ prediction.input.item }}</strong> for
+                                    {% endif %}
+                                    {% if prediction.input and prediction.input.user_role %}
+                                        <strong>{{ prediction.input.user_role }}</strong> |
+                                    {% endif %}
+                                    {% if prediction.output and prediction.output.best_market %}
+                                        Best Market: {{ prediction.output.best_market }}
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {% if prediction.input and prediction.input.latitude and prediction.input.longitude %}
+                                        Location: {{ prediction.input.latitude|float|round(4) }}, {{ prediction.input.longitude|float|round(4) }}
+                                    {% endif %}
+                                </small>
+
+                                {% elif prediction.component == 'cultivation_targeting' %}
+                                <p class="mb-1">
+                                    {% if prediction.input and prediction.input.region %}
+                                        Region: <strong>{{ prediction.input.region }}</strong> |
+                                    {% endif %}
+                                    {% if prediction.output and prediction.output.best_crop %}
+                                        Best Crop: <strong>{{ prediction.output.best_crop }}</strong>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {% if prediction.input and prediction.input.season %}
+                                        Season: {{ prediction.input.season }} |
+                                    {% endif %}
+                                    {% if prediction.output and prediction.output.total_recommendations %}
+                                        Recommendations: {{ prediction.output.total_recommendations }}
+                                    {% endif %}
+                                </small>
+
+                                {% elif prediction.component == 'yield_quality' %}
+                                <p class="mb-1">
+                                    Image Analysis:
+                                    {% if prediction.output and prediction.output.predicted_class %}
+                                        <strong>{{ prediction.output.predicted_class }}</strong>
+                                    {% else %}
+                                        <strong>Image Analysis</strong>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    {% if prediction.output %}
+                                        {% if prediction.output.quality_assessment %}
+                                            Quality: {{ prediction.output.quality_assessment }}
+                                        {% endif %}
+                                        {% if prediction.output.grade %}
+                                            ({{ prediction.output.grade }}) |
+                                        {% endif %}
+                                        {% if prediction.output.confidence %}
+                                            Confidence: {{ (prediction.output.confidence * 100)|int }}%
+                                        {% endif %}
+                                    {% endif %}
+                                </small>
+                                {% else %}
+                                <p class="mb-1">
+                                    <strong>{{ prediction.component|replace('_', ' ')|title }}</strong>
+                                </p>
+                                <small class="text-muted">
+                                    Click "Details" to view complete information
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button class="btn btn-outline-secondary" onclick="loadMore()">
+                            <i class="fas fa-arrow-down"></i> Load More Predictions
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-4x text-muted mb-3"></i>
+                        <h4>No Prediction History</h4>
+                        <p class="text-muted">Start using the AgriSense tools to build your prediction history.</p>
+                        <a href="{{ url_for('price_demand') }}" class="btn btn-primary">
+                            <i class="fas fa-rocket"></i> Make Your First Prediction
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Prediction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="reusePrediction()">
+                    <i class="fas fa-recycle"></i> Reuse This Prediction
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJ+Yq6q2v5E2PNZk5v3sSaha6dJbXx8aKVu2c=" crossorigin="anonymous"></script>
+<script>
+$(document).ready(function() {
+    // Initialize filter badges
+    $('.filter-badge').click(function() {
+        $('.filter-badge').removeClass('active');
+        $(this).addClass('active');
+        applyFilters();
+    });
+
+    // Set today's date as default for dateTo
+    var today = new Date().toISOString().split('T')[0];
+    $('#dateTo').val(today);
+
+    // Set 30 days ago as default for dateFrom
+    var thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    $('#dateFrom').val(thirtyDaysAgo.toISOString().split('T')[0]);
+
+    // Update statistics
+    updateStatistics();
+});
+
+function applyFilters() {
+    var filter = $('.filter-badge.active').data('filter');
+    var searchText = $('#searchInput').val().toLowerCase();
+    var dateFrom = $('#dateFrom').val();
+    var dateTo = $('#dateTo').val();
+
+    $('.history-card').each(function() {
+        var show = true;
+        var component = $(this).data('component');
+        var timestamp = $(this).data('timestamp');
+        var text = $(this).text().toLowerCase();
+
+        // Filter by component
+        if (filter !== 'all' && component !== filter) {
+            show = false;
+        }
+
+        // Filter by date range
+        if (dateFrom && timestamp < dateFrom) {
+            show = false;
+        }
+        if (dateTo && timestamp > dateTo) {
+            show = false;
+        }
+
+        // Filter by search text
+        if (searchText && !text.includes(searchText)) {
+            show = false;
+        }
+
+        if (show) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+
+    updateStatistics();
+}
+
+function updateStatistics() {
+    var visibleCount = $('.history-card:visible').length;
+    var profitableCount = $('.history-card[data-component="profitable_strategy"]:visible').length;
+    var marketCount = $('.history-card[data-component="market_ranking"]:visible').length;
+    var cultivationCount = $('.history-card[data-component="cultivation_targeting"]:visible').length;
+    var yieldCount = $('.history-card[data-component="yield_quality"]:visible').length;
+
+    $('#totalCount').text(visibleCount);
+    $('#profitableCount').text(profitableCount);
+    $('#marketCount').text(marketCount);
+    $('#cultivationCount').text(cultivationCount);
+    $('#yieldCount').text(yieldCount);
+}
+
+function viewDetails(predictionId) {
+    $.ajax({
+        url: '/api/prediction-details/' + predictionId,
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                displayPredictionDetails(response.data);
+            } else {
+                $('#modalBody').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        ${response.message || 'Failed to load prediction details.'}
+                    </div>
+                `);
+            }
+        },
+        error: function() {
+            $('#modalBody').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error loading prediction details. Please try again.
+                </div>
+            `);
+        }
+    });
+
+    $('#detailsModal').modal('show');
+}
+
+function displayPredictionDetails(prediction) {
+    var html = `
+        <h6>Prediction ID:</h6>
+        <p><code>${prediction._id}</code></p>
+
+        <h6 class="mt-4">Component:</h6>
+        <p><span class="badge ${getComponentBadgeClass(prediction.component)}">${getComponentName(prediction.component)}</span></p>
+
+        <h6 class="mt-4">Timestamp:</h6>
+        <p>${new Date(prediction.timestamp).toLocaleString()}</p>
+
+        <h6 class="mt-4">Input Parameters:</h6>
+        <pre class="bg-light p-3 rounded"><code>${JSON.stringify(prediction.input || {}, null, 2)}</code></pre>
+
+        <h6 class="mt-4">Output Results:</h6>
+        <pre class="bg-light p-3 rounded"><code>${JSON.stringify(prediction.output || {}, null, 2)}</code></pre>
+    `;
+
+    // Add specific details based on component
+    if (prediction.component === 'price_demand') {
+        html += `
+            <h6 class="mt-4">Key Insights:</h6>
+            <div class="alert alert-info">
+                <i class="fas fa-lightbulb"></i>
+                ${prediction.output && prediction.output.insights ? prediction.output.insights : 'No specific insights available.'}
+            </div>
+        `;
+    }
+
+    $('#modalBody').html(html);
+}
+
+function getComponentBadgeClass(component) {
+    switch(component) {
+        case 'price_demand': return 'bg-success';
+        case 'market_ranking': return 'bg-info';
+        case 'cultivation_targeting': return 'bg-warning';
+        case 'yield_quality': return 'bg-primary';
+        default: return 'bg-secondary';
+    }
+}
+
+function getComponentName(component) {
+    switch(component) {
+        case 'price_demand': return 'Price & Demand Prediction';
+        case 'market_ranking': return 'Market Opportunity Ranking';
+        case 'cultivation_targeting': return 'Cultivation Targeting';
+        case 'yield_quality': return 'Yield Quality Scaling';
+        default: return component.replace('_', ' ').title();
+    }
+}
+
+function deletePrediction(predictionId) {
+    if (confirm('Are you sure you want to delete this prediction? This action cannot be undone.')) {
+        $.ajax({
+            url: '/api/delete-prediction/' + predictionId,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    // Remove the card from view
+                    $('.history-card').each(function() {
+                        if ($(this).find('button[onclick*="' + predictionId + '"]').length > 0) {
+                            $(this).remove();
+                        }
+                    });
+                    updateStatistics();
+                    showToast('Prediction deleted successfully', 'success');
+                } else {
+                    showToast('Error deleting prediction: ' + (response.message || 'Unknown error'), 'error');
+                }
+            },
+            error: function(xhr) {
+                showToast('Error deleting prediction. Status: ' + xhr.status, 'error');
+            }
+        });
+    }
+}
+
+function loadMore() {
+    showToast('Loading more predictions...', 'info');
+    // In a real implementation, this would make an API call to load more predictions
+    // For now, just show a message
+}
+
+function exportHistory(format) {
+    showToast('Preparing export...', 'info');
+
+    var url = '';
+    var filename = 'agrisense_history';
+
+    switch(format) {
+        case 'csv':
+            url = '/api/export-history/csv';
+            filename = 'agrisense_history.csv';
+            break;
+        case 'json':
+            url = '/api/export-history/json';
+            filename = 'agrisense_history.json';
+            break;
+        case 'pdf':
+            url = '/api/export-history/pdf';
+            filename = 'agrisense_report.pdf';
+            break;
+        default:
+            showToast('Invalid export format', 'error');
+            return;
+    }
+
+    // Create loading indicator
+    showToast('Generating export file...', 'info');
+
+    // Trigger file download
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Show success message after a delay
+    setTimeout(function() {
+        showToast('Export completed successfully!', 'success');
+    }, 2000);
+}
+
+function reusePrediction() {
+    var modalBody = $('#modalBody').html();
+
+    // Check if we have prediction data in the modal
+    if (modalBody.includes('predictionId')) {
+        showToast('This feature would pre-fill the prediction form with this data.', 'info');
+    } else {
+        showToast('Please view prediction details first', 'warning');
+    }
+
+    $('#detailsModal').modal('hide');
+}
+
+// Helper function to show toast notifications
+function showToast(message, type = 'info') {
+    // Remove existing toast
+    $('.export-toast').remove();
+
+    var toastClass = '';
+    var icon = '';
+
+    switch(type) {
+        case 'success':
+            toastClass = 'toast-success';
+            icon = '<i class="fas fa-check-circle me-2"></i>';
+            break;
+        case 'error':
+            toastClass = 'toast-error';
+            icon = '<i class="fas fa-exclamation-circle me-2"></i>';
+            break;
+        case 'warning':
+            toastClass = 'toast-warning';
+            icon = '<i class="fas fa-exclamation-triangle me-2"></i>';
+            break;
+        default:
+            toastClass = 'toast-info';
+            icon = '<i class="fas fa-info-circle me-2"></i>';
+    }
+
+    var toastHtml = `
+        <div class="export-toast">
+            <div class="toast show ${toastClass}" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header text-white">
+                    ${icon}
+                    <strong class="me-auto">Export Status</strong>
+                    <button type="button" class="btn-close btn-close-white" onclick="$(this).closest('.export-toast').remove()"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('body').append(toastHtml);
+
+    // Auto-remove after 5 seconds
+    setTimeout(function() {
+        $('.export-toast').fadeOut(500, function() {
+            $(this).remove();
+        });
+    }, 5000);
+}
+
+// Add missing String.title() method
+String.prototype.title = function() {
+    return this.replace(/\w\S*/g, function(txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+};
+</script>
+{% endblock %}

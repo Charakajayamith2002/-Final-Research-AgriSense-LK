@@ -1,0 +1,70 @@
+{
+  "class_names": [
+    "PINEAPPLE",
+    "BANANA",
+    "PAPAYA",
+    "BRINJAL",
+    "PUMPKIN",
+    "BITTER_GOURD",
+    "CABBAGE",
+    "CARROT",
+    "CHILI_PEPPER",
+    "LIME",
+    "TOMATO",
+    "BEANS"
+  ],
+  "class_to_idx": {
+    "PINEAPPLE": 0,
+    "BANANA": 1,
+    "PAPAYA": 2,
+    "BRINJAL": 3,
+    "PUMPKIN": 4,
+    "BITTER_GOURD": 5,
+    "CABBAGE": 6,
+    "CARROT": 7,
+    "CHILI_PEPPER": 8,
+    "LIME": 9,
+    "TOMATO": 10,
+    "BEANS": 11
+  },
+  "idx_to_class": {
+    "0": "PINEAPPLE",
+    "1": "BANANA",
+    "2": "PAPAYA",
+    "3": "BRINJAL",
+    "4": "PUMPKIN",
+    "5": "BITTER_GOURD",
+    "6": "CABBAGE",
+    "7": "CARROT",
+    "8": "CHILI_PEPPER",
+    "9": "LIME",
+    "10": "TOMATO",
+    "11": "BEANS"
+  },
+  "grade_names": [
+    "Grade_A",
+    "Grade_B"
+  ],
+  "grade_to_idx": {
+    "Grade_A": 0,
+    "Grade_B": 1
+  },
+  "idx_to_grade": {
+    "0": "Grade_A",
+    "1": "Grade_B"
+  },
+  "species_display": {
+    "BANANA": "කෙසෙල් (Banana) – Musa spp. (Banana).",
+    "PAPAYA": "පැපොල් (Papaya) – Carica papaya (Papaya, Pawpaw).",
+    "PINEAPPLE": "අන්නාසි (Pineapple) – Ananas comosus (Pineapple).",
+    "BEANS": "බෝංචි (Beans) – Phaseolus vulgaris (Common bean, Green bean).",
+    "BITTER_GOURD": "කරවිල (Bitter Gourd) – Momordica charantia (Bitter melon, Bitter gourd).",
+    "BRINJAL": "වම්බටු (Brinjal) – Solanum melongena (Eggplant, Aubergine).",
+    "CABBAGE": "ගෝවා (Cabbage) – Brassica oleracea var. capitata (Cabbage).",
+    "CARROT": "කැරට් (Carrot) – Daucus carota subsp. sativus (Carrot).",
+    "CHILI_PEPPER": "මිරිස් (Chili pepper) – Capsicum annuum (Chili pepper).",
+    "LIME": "දෙහි (Lime) – Citrus aurantiifolia (Lime, Key lime).",
+    "PUMPKIN": "වට්ටක්කා (Pumpkin) – Cucurbita maxima (Pumpkin, Squash).",
+    "TOMATO": "තක්කාලි (Tomato) – Solanum lycopersicum (Tomato)."
+  }
+}

@@ -1,0 +1,1585 @@
+{% extends "base.html" %}
+
+{% block title %}Market Opportunity Ranking{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #2e7d32;
+        --primary-light: #4caf50;
+        --primary-dark: #1b5e20;
+        --secondary-color: #ff8f00;
+        --accent-color: #0277bd;
+        --light-bg: #f8f9fa;
+        --dark-text: #263238;
+        --border-radius: 12px;
+        --box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+
+    /* Page background similar to Profitable Strategy page */
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e9f5e9 100%);
+    }
+
+    .page-hero {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        border-radius: var(--border-radius);
+        padding: 2rem 1.5rem;
+        color: #fff;
+        margin-bottom: 1.75rem;
+        box-shadow: var(--box-shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-hero::before {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .page-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -10%;
+        width: 250px;
+        height: 250px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .page-hero h2 {
+        position: relative;
+        z-index: 1;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .page-hero p {
+        position: relative;
+        z-index: 1;
+        opacity: 0.9;
+    }
+
+    /* Card styling adjustments */
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        transition: transform 0.3s, box-shadow 0.3s;
+        overflow: hidden;
+        background: white;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.15);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+        color: white;
+        font-weight: 600;
+        border-bottom: none;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+        padding: 0.65rem 1rem;
+        transition: all 0.25s;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+    }
+
+    .btn-info {
+        background: linear-gradient(135deg, var(--accent-color), #006c9a);
+        border: none;
+        color: white;
+        border-radius: 10px;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.3s;
+    }
+
+    .btn-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #757575, #616161);
+        border: none;
+        color: white;
+        border-radius: 10px;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .form-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .form-section legend {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .calculation-note {
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-style: italic;
+        margin-top: 0.5rem;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .ranking-card {
+        transition: all 0.3s;
+        border-left: 5px solid transparent;
+    }
+
+    .ranking-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .rank-1 { border-left-color: gold; background-color: #fff9e6; }
+    .rank-2 { border-left-color: silver; background-color: #f8f9fa; }
+    .rank-3 { border-left-color: #cd7f32; background-color: #fef8e7; }
+
+    .map-container {
+        height: 400px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .map-placeholder {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #googleMap {
+        width: 100%;
+        height: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
+        <div>
+            <h2 class="mb-2"><i class="fas fa-map-marked-alt me-2"></i>Market Opportunity Ranking</h2>
+            <p class="mb-0">Find the best markets based on predicted prices, transport cost and your selected quantity. The recommendations are ordered by the highest savings.</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <span class="badge bg-white text-success py-2 px-3 shadow-sm">Select role → Enter values → Get results</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h3 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Market Opportunity Ranking</h3>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+
+                <form method="POST" id="rankingForm">
+                    <!-- Role Selection Section -->
+                    <div class="form-section">
+                        <legend class="h5 border-bottom pb-2">Role Selection</legend>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Your Role</label>
+                                <select class="form-select" name="user_role" id="user_role" required onchange="toggleCostField(); updateSectionTitles();">
+                                    <option value="">Select Role</option>
+                                    <option value="buyer" {% if form_data and form_data.user_role == 'buyer' %}selected{% endif %}>Buyer</option>
+                                    <option value="seller" {% if form_data and form_data.user_role == 'seller' %}selected{% endif %}>Seller</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Spending Section -->
+                    <div class="form-section">
+                        <legend class="h5 border-bottom pb-2">Cost Spending</legend>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Transport Cost (Rs./km)</label>
+                                <input type="number" class="form-control" name="transport_cost" id="transport_cost"
+                                       step="0.1" min="1" max="1000" required
+                                       value="{% if form_data %}{{ form_data.transport_cost }}{% else %}160{% endif %}">
+                                <small class="text-muted">Default: Rs. 160 per km (can be changed)</small>
+                            </div>
+                            <div class="col-md-6 mb-3" id="cultivation_cost_container">
+                                <label class="form-label" id="cultivation_cost_label">
+                                    {% if form_data and form_data.user_role == 'seller' %}
+                                    <span class="required-field">Total Cost (Cultivation)</span>
+                                    {% else %}
+                                    Total Cost (Cultivation)
+                                    {% endif %}
+                                </label>
+                                <input type="number" class="form-control" name="cultivation_cost" id="cultivation_cost"
+                                       step="0.1" min="0" max="1000000"
+                                       value="{% if form_data %}{{ form_data.cultivation_cost }}{% else %}0{% endif %}"
+                                       placeholder="Required for Sellers only">
+                                <small class="text-muted" id="cultivation_cost_note">
+                                    {% if form_data and form_data.user_role == 'seller' %}
+                                    Required for Sellers (Cost for the quantity specified below)
+                                    {% else %}
+                                    Required only for Sellers
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target Item & Quantity Selection Section -->
+                    <div class="form-section">
+                        <legend class="h5 border-bottom pb-2" id="quantity_section_title">
+                            {% if form_data and form_data.user_role == 'buyer' %}
+                            Target Item & Quantity Selection for Buyers
+                            {% elif form_data and form_data.user_role == 'seller' %}
+                            Target Item & Quantity Selection for Sellers
+                            {% else %}
+                            Target Item & Quantity Selection
+                            {% endif %}
+                        </legend>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Item</label>
+                                <select class="form-select" name="item" id="item" required>
+                                    <option value="">Select Item</option>
+                                    {% for category, data in items.items() %}
+                                        <optgroup label="{{ category }}">
+                                            {% for item in data.local %}
+                                                <option value="{{ item }}" {% if form_data and form_data.item == item %}selected{% endif %}>{{ item }}</option>
+                                            {% endfor %}
+                                            {% if data.imported %}
+                                                {% for item in data.imported %}
+                                                    <option value="{{ item }}" {% if form_data and form_data.item == item %}selected{% endif %}>{{ item }} (Imp)</option>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </optgroup>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Price Type</label>
+                                <select class="form-select" name="price_type" required>
+                                    <option value="Wholesale" {% if form_data and form_data.price_type == 'Wholesale' %}selected{% endif %}>Wholesale</option>
+                                    <option value="Retail" {% if form_data and form_data.price_type == 'Retail' %}selected{% endif %}>Retail</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required-field">Quantity Unit</label>
+                                <select class="form-select" name="quantity_unit" id="quantity_unit" required>
+                                    <option value="kg" {% if form_data and form_data.quantity_unit == 'kg' %}selected{% endif %}>Kilogram (kg)</option>
+                                    <option value="g" {% if form_data and form_data.quantity_unit == 'g' %}selected{% endif %}>Gram (g)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label required-field">Quantity</label>
+                                <input type="number" class="form-control" name="quantity" id="quantity"
+                                       step="0.01" min="0.01" max="10000" required
+                                       value="{% if form_data %}{{ form_data.quantity }}{% else %}1{% endif %}"
+                                       placeholder="Enter quantity">
+                                <small class="text-muted">
+                                    {% if form_data and form_data.user_role == 'seller' %}
+                                    This quantity determines the Total Cost (Cultivation) above
+                                    {% else %}
+                                    Buying quantity for cost calculation
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="calculation-note">
+                            <i class="fas fa-calculator me-1"></i>
+                            <span id="calculation_formula">
+                                {% if form_data and form_data.user_role == 'buyer' %}
+                                For Buyers: Net Advantage = (Most expensive market cost) - (Predicted Price × Quantity + Transport)
+                                {% elif form_data and form_data.user_role == 'seller' %}
+                                For Sellers: Net Advantage = (Predicted Price × Quantity) - (Cultivation + Transport Costs)
+                                {% else %}
+                                Select role to see calculation formula
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Location Selection Section -->
+                    <div class="form-section">
+                        <legend class="h5 border-bottom pb-2">Your Location</legend>
+
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Select your location or use current location
+                            <button type="button" class="btn btn-outline-info btn-sm ms-3" onclick="useCurrentLocation()">
+                                <i class="fas fa-location-arrow me-1"></i>Use My Current Location
+                            </button>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Province</label>
+                                <select class="form-select" name="province" id="province" onchange="updateDistricts()" disabled>
+                                    <option value="">Select Province</option>
+                                    {% for province in provinces %}
+                                        <option value="{{ province }}">{{ province }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">District</label>
+                                <select class="form-select" name="district" id="district" onchange="updateDSDivisions()" disabled>
+                                    <option value="">Select District</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Divisional Secretariat</label>
+                                <select class="form-select" name="ds_division" id="ds_division" onchange="updateCoordinates()" disabled>
+                                    <option value="">Select DS Division</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Latitude</label>
+                                <input type="number" class="form-control" name="latitude" id="latitude"
+                                       step="0.000001" required readonly
+                                       value="{% if form_data %}{{ form_data.latitude }}{% else %}7.2906{% endif %}">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required-field">Longitude</label>
+                                <input type="number" class="form-control" name="longitude" id="longitude"
+                                       step="0.000001" required readonly
+                                       value="{% if form_data %}{{ form_data.longitude }}{% else %}80.6337{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-info btn-lg flex-grow-1">
+                            <i class="fas fa-search me-2"></i>Find Best Markets
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-lg flex-grow-1" onclick="resetFormAndResults()">
+                            <i class="fas fa-eraser me-2"></i>Clear / Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Market Locations Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-map me-2"></i>Market Locations</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="map" class="map-container">
+                    <div id="googleMap"></div>
+                    <div class="map-placeholder" id="mapPlaceholder">
+                        <i class="fas fa-map-marked-alt fa-4x mb-3"></i>
+                        <h5>Market Locations Map</h5>
+                        <p class="mb-0">Select a location to view on Google Maps</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <i class="fas fa-map-pin text-danger me-2"></i>
+                            <small>Your Location</small>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-shopping-cart text-success me-2"></i>
+                            <small>Market Locations</small>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                            <small>Google Maps</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Results Section -->
+        {% if recommendations %}
+        <div id="recommendationsSection">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-trophy me-2"></i>
+                        {% if form_data and form_data.user_role == 'buyer' %}
+                        Top Market Recommendations for Buyers
+                        {% elif form_data and form_data.user_role == 'seller' %}
+                        Top Market Recommendations for Sellers
+                        {% else %}
+                        Top Recommendations
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                <div class="text-center mb-4">
+                    <h5>Best Market</h5>
+                    <h2 class="text-success">{{ recommendations.best_market }}</h2>
+                    <p class="text-muted">Out of {{ recommendations.total_markets }} markets analyzed</p>
+                </div>
+
+                <!-- Top 3 Markets -->
+                {% for rec in recommendations.recommendations[:3] %}
+                <div class="card ranking-card rank-{{ rec.rank }} mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="mb-1">
+                                    <span class="badge {% if rec.rank == 1 %}bg-warning{% elif rec.rank == 2 %}bg-secondary{% else %}bg-danger{% endif %} me-2">
+                                        #{{ rec.rank }}
+                                    </span>
+                                    {{ rec.market }}
+                                </h5>
+                                <div class="mb-2">
+                                    <span class="badge bg-info me-2">
+                                        Price: Rs. {{ rec.predicted_price }}/kg
+                                    </span>
+                                    <span class="badge bg-dark">
+                                        Distance: {{ rec.distance_km }} km
+                                    </span>
+                                </div>
+                                <p class="mb-1 small">{{ rec.explanation }}</p>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">Transport Cost</small><br>
+                                <strong>Rs. {{ rec.transport_cost }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">
+                                    {% if form_data and form_data.user_role == 'buyer' %}
+                                    Net Advantage
+                                    {% else %}
+                                    Net Revenue
+                                    {% endif %}
+                                </small><br>
+                                <strong class="{% if rec.net_advantage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    Rs. {{ rec.net_advantage }}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Summary Statistics -->
+                <div class="mt-4 pt-3 border-top">
+                    <h6>Summary</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Average Price</small><br>
+                            <strong>
+                                Rs. {{ "%.2f"|format(recommendations.recommendations|map(attribute='predicted_price')|sum / recommendations.recommendations|length) }}/kg
+                            </strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Average Distance</small><br>
+                            <strong>
+                                {{ "%.1f"|format(recommendations.recommendations|map(attribute='distance_km')|sum / recommendations.recommendations|length) }} km
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <small class="text-muted">Quantity</small><br>
+                            <strong>
+                                {{ form_data.quantity if form_data else 1 }}
+                                {{ form_data.quantity_unit if form_data else 'kg' }}
+                                ({{ recommendations.quantity_kg|default((form_data.quantity|float if form_data and form_data.quantity else 1)) }} kg)
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- All Recommendations Table -->
+{% if recommendations and recommendations.recommendations|length > 3 %}
+<div id="allRecommendationsSection">
+    <div class="card mt-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>
+                {% if form_data and form_data.user_role == 'buyer' %}
+                All Market Recommendations for Buyers
+                {% elif form_data and form_data.user_role == 'seller' %}
+                All Market Recommendations for Sellers
+                {% else %}
+                All Market Recommendations
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rank</th>
+                            <th>Market</th>
+                            <th>Predicted Price (Rs/kg)</th>
+                            <th>Distance (km)</th>
+                            <th>Transport Cost (Rs)</th>
+                            <th>
+                                {% if form_data and form_data.user_role == 'buyer' %}
+                                Net Advantage (Rs)
+                                {% else %}
+                                Net Revenue (Rs)
+                                {% endif %}
+                            </th>
+                            <th>Explanation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in recommendations.recommendations %}
+                        <tr>
+                            <td><span class="badge {% if rec.rank == 1 %}bg-warning{% elif rec.rank == 2 %}bg-secondary{% else %}bg-danger{% endif %}">#{{ rec.rank }}</span></td>
+                            <td><strong>{{ rec.market }}</strong></td>
+                            <td>Rs. {{ rec.predicted_price }}</td>
+                            <td>{{ rec.distance_km }} km</td>
+                            <td>Rs. {{ rec.transport_cost }}</td>
+                            <td class="{% if rec.net_advantage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                Rs. {{ rec.net_advantage }}
+                            </td>
+                            <td><small>{{ rec.explanation }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Province, district and DS division data structure
+const locationData = {
+    "Western Province": {
+        "Colombo District": {
+            "Colombo": {"lat": 6.9271, "lon": 79.8612},
+            "Thimbirigasyaya": {"lat": 6.8900, "lon": 79.8700},
+            "Dehiwala": {"lat": 6.8567, "lon": 79.8633},
+            "Ratmalana": {"lat": 6.8200, "lon": 79.8850},
+            "Moratuwa": {"lat": 6.7833, "lon": 79.8833},
+            "Sri Jayawardenepura Kotte": {"lat": 6.9100, "lon": 79.8950},
+            "Maharagama": {"lat": 6.8500, "lon": 79.9250},
+            "Kesbewa": {"lat": 6.8700, "lon": 79.9400},
+            "Kaduwela": {"lat": 6.9300, "lon": 79.9800},
+            "Homagama": {"lat": 6.8400, "lon": 80.0200},
+            "Kolonnawa": {"lat": 6.9200, "lon": 79.9050},
+            "Seethawaka": {"lat": 6.9500, "lon": 80.1500},
+            "Padukka": {"lat": 6.8300, "lon": 80.0900}
+        },
+        "Gampaha District": {
+            "Gampaha": {"lat": 7.0916, "lon": 79.9997},
+            "Minuwangoda": {"lat": 7.1667, "lon": 79.9500},
+            "Divulapitiya": {"lat": 7.2500, "lon": 80.0000},
+            "Mirigama": {"lat": 7.2333, "lon": 80.1167},
+            "Attanagalla": {"lat": 7.1167, "lon": 80.1500},
+            "Negombo": {"lat": 7.2083, "lon": 79.8358},
+            "Katana": {"lat": 7.2500, "lon": 79.9000},
+            "Wattala": {"lat": 6.9833, "lon": 79.8833},
+            "Ja-Ela": {"lat": 7.0833, "lon": 79.9000},
+            "Mahara": {"lat": 7.1500, "lon": 80.0500},
+            "Dompe": {"lat": 7.0000, "lon": 80.0500},
+            "Biyagama": {"lat": 6.9500, "lon": 80.0000},
+            "Kelaniya": {"lat": 6.9500, "lon": 79.9167}
+        },
+        "Kalutara District": {
+            "Kalutara": {"lat": 6.5831, "lon": 79.9597},
+            "Panadura": {"lat": 6.7133, "lon": 79.9042},
+            "Bandaragama": {"lat": 6.7167, "lon": 79.9833},
+            "Horana": {"lat": 6.7167, "lon": 80.0667},
+            "Mathugama": {"lat": 6.5167, "lon": 80.1167},
+            "Walallawita": {"lat": 6.6500, "lon": 80.2500},
+            "Beruwala": {"lat": 6.4667, "lon": 79.9833},
+            "Dodangoda": {"lat": 6.5833, "lon": 80.1333},
+            "Bulathsinhala": {"lat": 6.6667, "lon": 80.1833},
+            "Madurawela": {"lat": 6.6333, "lon": 80.2167},
+            "Millaniya": {"lat": 6.7500, "lon": 80.0500},
+            "Palindanuwara": {"lat": 6.5500, "lon": 80.3500},
+            "Agalawatta": {"lat": 6.5500, "lon": 80.1667}
+        }
+    },
+    "Central Province": {
+        "Kandy District": {
+            "Kandy": {"lat": 7.2964, "lon": 80.6350},
+            "Udunuwara": {"lat": 7.2333, "lon": 80.6833},
+            "Yatinuwara": {"lat": 7.2833, "lon": 80.5667},
+            "Pathadumbara": {"lat": 7.3167, "lon": 80.7167},
+            "Udapalatha": {"lat": 7.1833, "lon": 80.7667},
+            "Ganga Ihala Korale": {"lat": 7.3333, "lon": 80.5167},
+            "Harispattuwa": {"lat": 7.2667, "lon": 80.6000},
+            "Poojapitiya": {"lat": 7.4000, "lon": 80.5667},
+            "Kundasale": {"lat": 7.2667, "lon": 80.7000},
+            "Minipe": {"lat": 7.2333, "lon": 80.8333},
+            "Panvila": {"lat": 7.1500, "lon": 80.6333},
+            "Udadumbara": {"lat": 7.3333, "lon": 80.7667},
+            "Delthota": {"lat": 7.1667, "lon": 80.7667},
+            "Hatharaliyadda": {"lat": 7.3167, "lon": 80.9333},
+            "Doluwa": {"lat": 7.2500, "lon": 80.8500},
+            "Medadumbara": {"lat": 7.2833, "lon": 80.8000},
+            "Thumpane": {"lat": 7.3667, "lon": 80.8833},
+            "Kothmale": {"lat": 7.0667, "lon": 80.5833},
+            "Pathahewaheta": {"lat": 7.2000, "lon": 80.9167}
+        },
+        "Matale District": {
+            "Matale": {"lat": 7.4717, "lon": 80.6242},
+            "Dambulla": {"lat": 7.8569, "lon": 80.6514},
+            "Pallepola": {"lat": 7.5167, "lon": 80.6833},
+            "Ukuwela": {"lat": 7.4167, "lon": 80.6333},
+            "Yatawatta": {"lat": 7.5500, "lon": 80.5833},
+            "Galewela": {"lat": 7.8667, "lon": 80.5833},
+            "Wilgamuwa": {"lat": 7.7167, "lon": 80.8333},
+            "Naula": {"lat": 7.7000, "lon": 80.6500},
+            "Rattota": {"lat": 7.5167, "lon": 80.7667},
+            "Palapathwela": {"lat": 7.5333, "lon": 80.7167},
+            "Laggala-Pallegama": {"lat": 7.6167, "lon": 80.8667}
+        },
+        "Nuwara Eliya District": {
+            "Nuwara Eliya": {"lat": 6.9706, "lon": 80.7828},
+            "Walapane": {"lat": 7.0333, "lon": 80.8667},
+            "Hanguranketha": {"lat": 7.1667, "lon": 80.7833},
+            "Ambagamuwa": {"lat": 6.9333, "lon": 80.5500},
+            "Kothmale": {"lat": 7.0833, "lon": 80.6333},
+            "Kotmale": {"lat": 7.1167, "lon": 80.7000},
+            "Maskeliya": {"lat": 6.8333, "lon": 80.5667}
+        }
+    },
+    "Southern Province": {
+        "Galle District": {
+            "Galle": {"lat": 6.0536, "lon": 80.2117},
+            "Akmeemana": {"lat": 6.0833, "lon": 80.3000},
+            "Ambalangoda": {"lat": 6.2333, "lon": 80.0500},
+            "Baddegama": {"lat": 6.1833, "lon": 80.1833},
+            "Balapitiya": {"lat": 6.2833, "lon": 80.0333},
+            "Benthota": {"lat": 6.4167, "lon": 80.0000},
+            "Bope-Poddala": {"lat": 6.1333, "lon": 80.2000},
+            "Elpitiya": {"lat": 6.2833, "lon": 80.1667},
+            "Habaraduwa": {"lat": 6.0333, "lon": 80.2833},
+            "Imaduwa": {"lat": 6.0667, "lon": 80.3667},
+            "Karandeniya": {"lat": 6.2500, "lon": 80.1167},
+            "Nagoda": {"lat": 6.2000, "lon": 80.2500},
+            "Neluwa": {"lat": 6.3667, "lon": 80.3833},
+            "Niyagama": {"lat": 6.2333, "lon": 80.2167},
+            "Thawalama": {"lat": 6.3333, "lon": 80.3000},
+            "Welivitiya-Divithura": {"lat": 6.4667, "lon": 80.0833},
+            "Yakkalamulla": {"lat": 6.1167, "lon": 80.3333}
+        },
+        "Matara District": {
+            "Matara": {"lat": 5.9483, "lon": 80.5353},
+            "Akuressa": {"lat": 6.0833, "lon": 80.4667},
+            "Athuraliya": {"lat": 6.0667, "lon": 80.6167},
+            "Devinuwara": {"lat": 5.9333, "lon": 80.5833},
+            "Dickwella": {"lat": 6.1167, "lon": 80.7000},
+            "Hakmana": {"lat": 6.0833, "lon": 80.5833},
+            "Kamburupitiya": {"lat": 6.0833, "lon": 80.5333},
+            "Kirinda Puhulwella": {"lat": 6.1333, "lon": 80.5500},
+            "Kotapola": {"lat": 6.2000, "lon": 80.6500},
+            "Malimbada": {"lat": 5.9667, "lon": 80.4833},
+            "Mulatiyana": {"lat": 6.2167, "lon": 80.4833},
+            "Pasgoda": {"lat": 6.1667, "lon": 80.6833},
+            "Pitabeddara": {"lat": 6.2333, "lon": 80.4833},
+            "Thihagoda": {"lat": 6.0000, "lon": 80.5167},
+            "Weligama": {"lat": 5.9667, "lon": 80.4333},
+            "Welipitiya": {"lat": 6.1667, "lon": 80.5167}
+        },
+        "Hambantota District": {
+            "Hambantota": {"lat": 6.1244, "lon": 81.1186},
+            "Ambalantota": {"lat": 6.1167, "lon": 81.0333},
+            "Angunakolapelessa": {"lat": 6.1667, "lon": 80.9000},
+            "Beliatta": {"lat": 6.0500, "lon": 80.7333},
+            "Lunugamvehera": {"lat": 6.3500, "lon": 81.2333},
+            "Okewela": {"lat": 6.4333, "lon": 81.3000},
+            "Sooriyawewa": {"lat": 6.3000, "lon": 81.2333},
+            "Tangalle": {"lat": 6.0167, "lon": 80.8000},
+            "Tissamaharama": {"lat": 6.2833, "lon": 81.2833},
+            "Weeraketiya": {"lat": 6.1500, "lon": 81.2000}
+        }
+    },
+    "Northern Province": {
+        "Jaffna District": {
+            "Jaffna": {"lat": 9.6617, "lon": 80.0256},
+            "Delft": {"lat": 9.5167, "lon": 79.7167},
+            "Karainagar": {"lat": 9.7500, "lon": 79.8667},
+            "Nallur": {"lat": 9.6833, "lon": 80.0333},
+            "Islands (South)": {"lat": 9.5833, "lon": 79.8167},
+            "Chavakachcheri": {"lat": 9.6667, "lon": 80.1500},
+            "Point Pedro": {"lat": 9.8167, "lon": 80.2333},
+            "Sandilipay": {"lat": 9.8000, "lon": 79.9500},
+            "Uduvil": {"lat": 9.8167, "lon": 80.0167},
+            "Kopay": {"lat": 9.7333, "lon": 80.0333},
+            "Valikamam East": {"lat": 9.7500, "lon": 80.1000},
+            "Valikamam North": {"lat": 9.8167, "lon": 79.9667},
+            "Valikamam South": {"lat": 9.7000, "lon": 80.0500},
+            "Valikamam South-West": {"lat": 9.6500, "lon": 79.9833},
+            "Valikamam West": {"lat": 9.7500, "lon": 79.9000},
+            "Thenmaradchi": {"lat": 9.7333, "lon": 80.2167}
+        },
+        "Kilinochchi District": {
+            "Kilinochchi": {"lat": 9.3833, "lon": 80.4000},
+            "Karachchi": {"lat": 9.4167, "lon": 80.4000},
+            "Poonakary": {"lat": 9.5000, "lon": 80.2000},
+            "Kandavalai": {"lat": 9.4500, "lon": 80.4833},
+            "Pachchilaipalli": {"lat": 9.3500, "lon": 80.3667}
+        },
+        "Mannar District": {
+            "Mannar": {"lat": 8.9817, "lon": 79.9111},
+            "Manthai West": {"lat": 8.9500, "lon": 79.9833},
+            "Musalai": {"lat": 8.8333, "lon": 80.0833},
+            "Nanaddan": {"lat": 8.9000, "lon": 80.0333},
+            "Madhu": {"lat": 8.8333, "lon": 80.3000}
+        },
+        "Mullaitivu District": {
+            "Mullaitivu": {"lat": 9.2667, "lon": 80.8167},
+            "Maritimepattu": {"lat": 9.1167, "lon": 80.8667},
+            "Oddusuddan": {"lat": 9.0667, "lon": 80.6667},
+            "Puthukudiyiruppu": {"lat": 9.3000, "lon": 80.7167},
+            "Thunukkai": {"lat": 9.1167, "lon": 80.4833},
+            "Manthai East": {"lat": 8.9500, "lon": 80.5000},
+            "Welioya": {"lat": 8.7500, "lon": 80.8667}
+        },
+        "Vavuniya District": {
+            "Vavuniya": {"lat": 8.7500, "lon": 80.5000},
+            "Vavuniya North": {"lat": 8.8000, "lon": 80.4833},
+            "Vavuniya South": {"lat": 8.7167, "lon": 80.5167},
+            "Vengalacheddikulam": {"lat": 8.9000, "lon": 80.3667},
+            "Chettikulam": {"lat": 8.6333, "lon": 80.5667}
+        }
+    },
+    "Eastern Province": {
+        "Trincomalee District": {
+            "Trincomalee": {"lat": 8.5667, "lon": 81.2333},
+            "Gomarankadawala": {"lat": 8.6833, "lon": 80.9833},
+            "Kantalai": {"lat": 8.3667, "lon": 81.0000},
+            "Kinniya": {"lat": 8.4833, "lon": 81.1833},
+            "Kuchchaveli": {"lat": 8.8167, "lon": 81.1333},
+            "Morawewa": {"lat": 8.2667, "lon": 80.9833},
+            "Muttur": {"lat": 8.4500, "lon": 81.2667},
+            "Padavi Sri Pura": {"lat": 8.3333, "lon": 81.1167},
+            "Seruvila": {"lat": 8.3667, "lon": 81.3167},
+            "Thampalagamam": {"lat": 8.6167, "lon": 81.2000}
+        },
+        "Batticaloa District": {
+            "Batticaloa": {"lat": 7.7167, "lon": 81.7000},
+            "Eravur Pattu": {"lat": 7.7667, "lon": 81.6000},
+            "Eravur Town": {"lat": 7.7833, "lon": 81.5833},
+            "Kattankudy": {"lat": 7.6833, "lon": 81.7167},
+            "Koralai Pattu": {"lat": 7.8667, "lon": 81.4667},
+            "Koralai Pattu North": {"lat": 8.0000, "lon": 81.4333},
+            "Manmunai North": {"lat": 7.8333, "lon": 81.5333},
+            "Manmunai Pattu": {"lat": 7.9000, "lon": 81.5000},
+            "Manmunai South & Eruvil Pattu": {"lat": 7.6667, "lon": 81.7500},
+            "Manmunai West": {"lat": 7.8000, "lon": 81.4500},
+            "Porativu Pattu": {"lat": 7.9500, "lon": 81.5667}
+        },
+        "Ampara District": {
+            "Ampara": {"lat": 7.2833, "lon": 81.6667},
+            "Akkaraipattu": {"lat": 7.2167, "lon": 81.8500},
+            "Alayadiwembu": {"lat": 7.2500, "lon": 81.8333},
+            "Damana": {"lat": 7.1833, "lon": 81.6167},
+            "Dehiattakandiya": {"lat": 7.7333, "lon": 81.0667},
+            "Irakkamam": {"lat": 6.9833, "lon": 81.8000},
+            "Kalmunai (Muslim)": {"lat": 7.4167, "lon": 81.8333},
+            "Kalmunai (Tamil)": {"lat": 7.4000, "lon": 81.8167},
+            "Karaitivu": {"lat": 7.3667, "lon": 81.7333},
+            "Lahugala": {"lat": 6.8667, "lon": 81.6833},
+            "Mahaoya": {"lat": 7.5833, "lon": 81.3000},
+            "Nintavur": {"lat": 7.3333, "lon": 81.8500},
+            "Padiyathalawa": {"lat": 7.4000, "lon": 81.2333},
+            "Pothuvil": {"lat": 6.8667, "lon": 81.8333},
+            "Samanthurai": {"lat": 7.3833, "lon": 81.8000},
+            "Thirukkovil": {"lat": 7.1167, "lon": 81.8500},
+            "Uhana": {"lat": 7.3667, "lon": 81.6333}
+        }
+    },
+    "North Western Province": {
+        "Kurunegala District": {
+            "Kurunegala": {"lat": 7.4833, "lon": 80.3667},
+            "Alawwa": {"lat": 7.3000, "lon": 80.2500},
+            "Bingiriya": {"lat": 7.4667, "lon": 79.9833},
+            "Giribawa": {"lat": 7.7167, "lon": 80.3167},
+            "Ibbagamuwa": {"lat": 7.6000, "lon": 80.4167},
+            "Kuliyapitiya East": {"lat": 7.4667, "lon": 80.0500},
+            "Kuliyapitiya West": {"lat": 7.4833, "lon": 80.0500},
+            "Kobeigane": {"lat": 7.6667, "lon": 80.2667},
+            "Kotavehera": {"lat": 7.5167, "lon": 80.2000},
+            "Mawathagama": {"lat": 7.4167, "lon": 80.4500},
+            "Melsiripura": {"lat": 7.6500, "lon": 80.5833},
+            "Narammala": {"lat": 7.3500, "lon": 80.2167},
+            "Nikaweratiya": {"lat": 7.7667, "lon": 80.1167},
+            "Panduwasnuwara": {"lat": 7.6000, "lon": 80.1167},
+            "Pannala": {"lat": 7.3333, "lon": 80.0333},
+            "Polgahawela": {"lat": 7.3333, "lon": 80.3000},
+            "Polpithigama": {"lat": 7.5500, "lon": 80.4333},
+            "Rasnayakapura": {"lat": 7.6000, "lon": 80.5167},
+            "Udubaddawa": {"lat": 7.4833, "lon": 80.2833},
+            "Wariyapola": {"lat": 7.6167, "lon": 80.2333},
+            "Galgamuwa": {"lat": 7.8667, "lon": 80.3000},
+            "Weerambugedara": {"lat": 7.2833, "lon": 80.1500}
+        },
+        "Puttalam District": {
+            "Puttalam": {"lat": 8.0333, "lon": 79.8167},
+            "Anamaduwa": {"lat": 7.8833, "lon": 79.9000},
+            "Arachchikattuwa": {"lat": 8.1667, "lon": 79.7833},
+            "Chilaw": {"lat": 7.5833, "lon": 79.8000},
+            "Dankotuwa": {"lat": 7.3000, "lon": 79.8667},
+            "Kalpitiya": {"lat": 8.1667, "lon": 79.7000},
+            "Karuwalagaswewa": {"lat": 8.0333, "lon": 80.0500},
+            "Madampe": {"lat": 7.6500, "lon": 79.9333},
+            "Mahakumbukkadawala": {"lat": 8.1000, "lon": 79.8833},
+            "Mahawewa": {"lat": 7.5333, "lon": 79.8500},
+            "Mundalama": {"lat": 8.0000, "lon": 79.7333},
+            "Nattandiya": {"lat": 7.4167, "lon": 79.8667},
+            "Nawagattegama": {"lat": 7.7000, "lon": 79.9500},
+            "Pallama": {"lat": 7.7167, "lon": 79.9167},
+            "Vanathavilluwa": {"lat": 8.1000, "lon": 79.9500},
+            "Wennappuwa": {"lat": 7.3333, "lon": 79.8500}
+        }
+    },
+    "North Central Province": {
+        "Anuradhapura District": {
+            "Anuradhapura": {"lat": 8.3350, "lon": 80.4108},
+            "Galenbindunuwewa": {"lat": 8.2833, "lon": 80.7000},
+            "Galnewa": {"lat": 8.1667, "lon": 80.5833},
+            "Horowpothana": {"lat": 8.5833, "lon": 80.8167},
+            "Ipalogama": {"lat": 8.0500, "lon": 80.5167},
+            "Kahatagasdigiliya": {"lat": 8.4167, "lon": 80.6333},
+            "Kebithigollewa": {"lat": 8.6833, "lon": 80.6833},
+            "Kekirawa": {"lat": 8.0333, "lon": 80.6000},
+            "Maha Vilachchiya": {"lat": 8.5333, "lon": 80.5000},
+            "Medawachchiya": {"lat": 8.5333, "lon": 80.5167},
+            "Mihintale": {"lat": 8.3583, "lon": 80.5167},
+            "Nochchiyagama": {"lat": 8.3333, "lon": 80.2000},
+            "Nuwaragam Palatha (Central)": {"lat": 8.1500, "lon": 80.4667},
+            "Nuwaragam Palatha (East)": {"lat": 8.2167, "lon": 80.5833},
+            "Padaviya": {"lat": 8.8333, "lon": 80.7667},
+            "Palagala": {"lat": 7.9167, "lon": 80.6333},
+            "Palugaswewa": {"lat": 8.0833, "lon": 80.3667},
+            "Rajanganaya": {"lat": 8.1500, "lon": 80.2833},
+            "Rambewa": {"lat": 8.3833, "lon": 80.4167},
+            "Thalawa": {"lat": 8.2667, "lon": 80.4167},
+            "Thirappane": {"lat": 8.2333, "lon": 80.5167}
+        },
+        "Polonnaruwa District": {
+            "Polonnaruwa": {"lat": 7.9333, "lon": 81.0000},
+            "Aralaganwila": {"lat": 7.8000, "lon": 81.1667},
+            "Dimbulagala": {"lat": 7.8500, "lon": 81.1333},
+            "Elahera": {"lat": 7.7500, "lon": 80.8667},
+            "Hingurakgoda": {"lat": 8.0333, "lon": 80.9500},
+            "Laggala-Pallegama (part)": {"lat": 7.6500, "lon": 80.8833},
+            "Medirigiriya": {"lat": 7.9167, "lon": 81.0000},
+            "Thamankaduwa": {"lat": 7.8500, "lon": 81.0333},
+            "Welikanda": {"lat": 7.8667, "lon": 81.2500}
+        }
+    },
+    "Uva Province": {
+        "Badulla District": {
+            "Badulla": {"lat": 6.9897, "lon": 81.0560},
+            "Bandarawela": {"lat": 6.8256, "lon": 80.9864},
+            "Ella": {"lat": 6.8667, "lon": 81.0500},
+            "Haldummulla": {"lat": 6.7667, "lon": 80.9167},
+            "Hali-Ela": {"lat": 6.9500, "lon": 81.0333},
+            "Haputale": {"lat": 6.7667, "lon": 80.9667},
+            "Kandaketiya": {"lat": 6.8333, "lon": 81.0333},
+            "Lunugala": {"lat": 7.0500, "lon": 81.2500},
+            "Mahiyanganaya": {"lat": 7.3333, "lon": 81.0167},
+            "Meegahakivula": {"lat": 6.9167, "lon": 81.1667},
+            "Passara": {"lat": 6.9333, "lon": 81.1500},
+            "Rideemaliyadda": {"lat": 7.1500, "lon": 81.0833},
+            "Soranatota": {"lat": 7.0833, "lon": 81.0000},
+            "Uva Paranagama": {"lat": 6.8667, "lon": 81.1333},
+            "Welimada": {"lat": 6.9000, "lon": 80.9667},
+            "Wiyaluwa": {"lat": 6.9667, "lon": 81.1167}
+        },
+        "Monaragala District": {
+            "Monaragala": {"lat": 6.8714, "lon": 81.3486},
+            "Badalkumbura": {"lat": 6.8167, "lon": 81.2333},
+            "Bibila (Medagama)": {"lat": 6.9167, "lon": 81.3167},
+            "Buttala": {"lat": 6.7500, "lon": 81.2333},
+            "Kataragama": {"lat": 6.4167, "lon": 81.3333},
+            "Madulla": {"lat": 6.7833, "lon": 81.5000},
+            "Sevanagala": {"lat": 6.6833, "lon": 81.2000},
+            "Siyambalanduwa": {"lat": 7.1167, "lon": 81.5333},
+            "Thanamalwila": {"lat": 6.4167, "lon": 81.1333},
+            "Wellawaya": {"lat": 6.7333, "lon": 81.1000}
+        }
+    },
+    "Sabaragamuwa Province": {
+        "Ratnapura District": {
+            "Ratnapura": {"lat": 6.6828, "lon": 80.3992},
+            "Ayagama": {"lat": 6.7667, "lon": 80.3667},
+            "Balangoda": {"lat": 6.6500, "lon": 80.7000},
+            "Eheliyagoda": {"lat": 6.8500, "lon": 80.2667},
+            "Elapatha": {"lat": 6.6167, "lon": 80.5167},
+            "Embilipitiya": {"lat": 6.3500, "lon": 80.8500},
+            "Godakawela": {"lat": 6.5667, "lon": 80.6500},
+            "Imbulpe": {"lat": 6.7667, "lon": 80.8167},
+            "Kahawatta": {"lat": 6.5833, "lon": 80.5667},
+            "Kalawana": {"lat": 6.5333, "lon": 80.4000},
+            "Kiriella": {"lat": 6.7833, "lon": 80.3333},
+            "Kolonna": {"lat": 6.6667, "lon": 80.7833},
+            "Kuruvita": {"lat": 6.7833, "lon": 80.3667},
+            "Nivithigala": {"lat": 6.6667, "lon": 80.3333},
+            "Opanayaka": {"lat": 6.7000, "lon": 80.6333},
+            "Pelmadulla": {"lat": 6.6333, "lon": 80.5333},
+            "Rakwana": {"lat": 6.4833, "lon": 80.6333},
+            "Weligepola": {"lat": 6.5500, "lon": 80.4667}
+        },
+        "Kegalle District": {
+            "Kegalle": {"lat": 7.2514, "lon": 80.3464},
+            "Aranayaka": {"lat": 7.1500, "lon": 80.4500},
+            "Bulathkohupitiya": {"lat": 7.0833, "lon": 80.2833},
+            "Dehiovita": {"lat": 6.9500, "lon": 80.2667},
+            "Deraniyagala": {"lat": 6.9333, "lon": 80.3333},
+            "Galigamuwa": {"lat": 7.2333, "lon": 80.3000},
+            "Mawanella": {"lat": 7.2500, "lon": 80.4500},
+            "Rambukkana": {"lat": 7.2833, "lon": 80.3833},
+            "Ruwanwella": {"lat": 7.0500, "lon": 80.2500},
+            "Warakapola": {"lat": 7.1833, "lon": 80.1667},
+            "Yatiyanthota": {"lat": 7.0333, "lon": 80.3167}
+        }
+    }
+};
+
+// Market coordinates
+const markets = {
+    'Pettah': [6.9341, 79.9861],
+    'Dambulla': [7.8643, 80.6501],
+    'Narahenpita': [6.9300, 79.9681],
+    'Marandagahamula': [7.2903, 80.5327],
+    'Peliyagoda': [6.9682, 79.9815],
+    'Negombo': [7.2085, 79.9743]
+};
+
+let map;
+let markers = [];
+let polylines = [];
+let mapLoaded = false;
+
+// Toggle cultivation cost field based on role
+function toggleCostField() {
+    const role = document.getElementById('user_role').value;
+    const cultivationCostField = document.getElementById('cultivation_cost');
+    const cultivationCostLabel = document.getElementById('cultivation_cost_label');
+    const cultivationCostNote = document.getElementById('cultivation_cost_note');
+
+    if (role === 'seller') {
+        cultivationCostField.required = true;
+        cultivationCostField.placeholder = "Enter total cultivation cost";
+        cultivationCostLabel.innerHTML = '<span class="required-field">Total Cost (Cultivation)</span>';
+        cultivationCostNote.textContent = "Required for Sellers (Cost for the quantity specified below)";
+    } else {
+        cultivationCostField.required = false;
+        cultivationCostField.value = "0";
+        cultivationCostField.placeholder = "Required for Sellers only";
+        cultivationCostLabel.innerHTML = 'Total Cost (Cultivation)';
+        cultivationCostNote.textContent = "Required only for Sellers";
+    }
+}
+
+// Update section titles based on role
+function updateSectionTitles() {
+    const role = document.getElementById('user_role').value;
+    const sectionTitle = document.getElementById('quantity_section_title');
+    const calculationFormula = document.getElementById('calculation_formula');
+
+    if (role === 'buyer') {
+        sectionTitle.textContent = "Target Item & Quantity Selection for Buyers";
+        calculationFormula.textContent = "For Buyers: Net Advantage = Transport Cost - (Predicted Price × Quantity in kg)";
+    } else if (role === 'seller') {
+        sectionTitle.textContent = "Target Item & Quantity Selection for Sellers";
+        calculationFormula.textContent = "For Sellers: Net Advantage = (Cultivation Cost + Transport Cost) - (Predicted Price × Quantity in kg)";
+    } else {
+        sectionTitle.textContent = "Target Item & Quantity Selection";
+        calculationFormula.textContent = "Select role to see calculation formula";
+    }
+}
+
+// Enable/disable location dropdowns
+function toggleLocationFields(enable) {
+    const provinceSelect = document.getElementById('province');
+    const districtSelect = document.getElementById('district');
+    const dsSelect = document.getElementById('ds_division');
+
+    if (enable) {
+        provinceSelect.disabled = false;
+        districtSelect.disabled = false;
+        dsSelect.disabled = false;
+    } else {
+        provinceSelect.disabled = true;
+        districtSelect.disabled = true;
+        dsSelect.disabled = true;
+        provinceSelect.value = '';
+        districtSelect.value = '';
+        dsSelect.value = '';
+    }
+}
+
+function updateDistricts() {
+    const province = document.getElementById('province').value;
+    const districtSelect = document.getElementById('district');
+    const dsSelect = document.getElementById('ds_division');
+
+    districtSelect.innerHTML = '<option value="">Select District</option>';
+    dsSelect.innerHTML = '<option value="">Select DS Division</option>';
+    clearCoordinates();
+
+    if (province && locationData[province]) {
+        Object.keys(locationData[province]).forEach(district => {
+            const option = document.createElement('option');
+            option.value = district;
+            option.textContent = district;
+            districtSelect.appendChild(option);
+        });
+    }
+}
+
+function updateDSDivisions() {
+    const province = document.getElementById('province').value;
+    const district = document.getElementById('district').value;
+    const dsSelect = document.getElementById('ds_division');
+
+    dsSelect.innerHTML = '<option value="">Select DS Division</option>';
+    clearCoordinates();
+
+    if (province && district && locationData[province] && locationData[province][district]) {
+        Object.keys(locationData[province][district]).forEach(ds => {
+            const option = document.createElement('option');
+            option.value = ds;
+            option.textContent = ds;
+            dsSelect.appendChild(option);
+        });
+    }
+}
+
+function updateCoordinates() {
+    const province = document.getElementById('province').value;
+    const district = document.getElementById('district').value;
+    const ds = document.getElementById('ds_division').value;
+
+    if (province && district && ds &&
+        locationData[province] &&
+        locationData[province][district] &&
+        locationData[province][district][ds]) {
+
+        const coords = locationData[province][district][ds];
+        document.getElementById('latitude').value = coords.lat;
+        document.getElementById('longitude').value = coords.lon;
+
+        // Update map with the selected location
+        updateMap(coords.lat, coords.lon);
+    } else {
+        clearCoordinates();
+    }
+}
+
+function clearCoordinates() {
+    document.getElementById('latitude').value = '';
+    document.getElementById('longitude').value = '';
+    clearMap();
+}
+
+function useCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                document.getElementById('latitude').value = lat.toFixed(6);
+                document.getElementById('longitude').value = lon.toFixed(6);
+
+                // Disable dropdowns and clear their values
+                toggleLocationFields(false);
+
+                // Update map with current location
+                updateMap(lat, lon);
+            },
+            (error) => {
+                alert('Unable to retrieve your location. Please enable location services.');
+                console.error('Geolocation error:', error);
+            }
+        );
+    } else {
+        alert('Geolocation is not supported by your browser.');
+    }
+}
+
+function findClosestLocation(lat, lon) {
+    let closestProvince = '';
+    let closestDistrict = '';
+    let closestDS = '';
+    let minDistance = Infinity;
+
+    for (const [province, districts] of Object.entries(locationData)) {
+        for (const [district, dsList] of Object.entries(districts)) {
+            for (const [ds, coords] of Object.entries(dsList)) {
+                const distance = Math.sqrt(
+                    Math.pow(lat - coords.lat, 2) +
+                    Math.pow(lon - coords.lon, 2)
+                );
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestProvince = province;
+                    closestDistrict = district;
+                    closestDS = ds;
+                }
+            }
+        }
+    }
+
+    if (closestProvince && closestDistrict && closestDS) {
+        document.getElementById('province').value = closestProvince;
+        updateDistricts();
+        setTimeout(() => {
+            document.getElementById('district').value = closestDistrict;
+            updateDSDivisions();
+            setTimeout(() => {
+                document.getElementById('ds_division').value = closestDS;
+                updateCoordinates();
+            }, 100);
+        }, 100);
+    }
+}
+
+function initMap() {
+    try {
+        // Create a default map centered on Sri Lanka
+        const sriLanka = {lat: 7.8731, lng: 80.7718};
+        map = new google.maps.Map(document.getElementById('googleMap'), {
+            zoom: 8,
+            center: sriLanka,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        });
+
+        // Hide placeholder and show map
+        document.getElementById('mapPlaceholder').style.display = 'none';
+        mapLoaded = true;
+
+        // Initialize map with current location if coordinates exist
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lon = parseFloat(document.getElementById('longitude').value);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            updateMap(lat, lon);
+        }
+
+        // If we have recommendations after form submission, show them
+        {% if recommendations %}
+        setTimeout(() => showRecommendationsOnMap(), 1000);
+        {% endif %}
+    } catch (error) {
+        console.error('Google Maps initialization error:', error);
+    }
+}
+
+function updateMap(lat, lon) {
+    if (!mapLoaded) {
+        // If map is not loaded yet, queue the update
+        setTimeout(() => updateMap(lat, lon), 500);
+        return;
+    }
+
+    try {
+        // Clear existing markers and polylines
+        clearMap();
+
+        const userLocation = {lat: lat, lng: lon};
+
+        // Center map on user location
+        map.setCenter(userLocation);
+        map.setZoom(12);
+
+        // Add marker for user location
+        const userMarker = new google.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: 'Your Location',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+            }
+        });
+        markers.push(userMarker);
+
+        // Add market locations
+        Object.entries(markets).forEach(([name, location]) => {
+            const marketMarker = new google.maps.Marker({
+                position: {lat: location[0], lng: location[1]},
+                map: map,
+                title: name + ' Market',
+                icon: {
+                    url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                }
+            });
+            markers.push(marketMarker);
+        });
+    } catch (error) {
+        console.error('Error updating map:', error);
+    }
+}
+
+function showRecommendationsOnMap() {
+    if (!mapLoaded) {
+        setTimeout(() => showRecommendationsOnMap(), 500);
+        return;
+    }
+
+    try {
+        // Clear existing markers and polylines
+        clearMap();
+
+        // Get user location from form
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lon = parseFloat(document.getElementById('longitude').value);
+
+        if (isNaN(lat) || isNaN(lon)) {
+            console.error('Invalid user location coordinates');
+            return;
+        }
+
+        const userLocation = {lat: lat, lng: lon};
+
+        // Center map on user location
+        map.setCenter(userLocation);
+        map.setZoom(10);
+
+        // Add marker for user location
+        const userMarker = new google.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: 'Your Location',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+            }
+        });
+        markers.push(userMarker);
+
+        // Get recommendations from the page
+        const recommendations = {{ recommendations|tojson|safe if recommendations else 'null' }};
+
+        if (!recommendations || !recommendations.recommendations) {
+            console.error('No recommendations found');
+            return;
+        }
+
+        // Define colors for different ranks
+        const rankColors = {
+            1: '#00FF00', // Green for rank 1 (best market)
+            2: '#4169E1', // Royal Blue for rank 2
+            3: '#FFA500', // Orange for rank 3
+            other: '#808080' // Gray for other ranks
+        };
+
+        // Add markers and routes for each recommendation
+        recommendations.recommendations.forEach((rec) => {
+            const marketCoords = markets[rec.market];
+
+            if (!marketCoords) {
+                console.warn(`Market coordinates not found for: ${rec.market}`);
+                return;
+            }
+
+            const marketLocation = {lat: marketCoords[0], lng: marketCoords[1]};
+
+            // Determine color based on rank
+            let color = rankColors.other;
+            if (rec.rank === 1) color = rankColors[1];
+            else if (rec.rank === 2) color = rankColors[2];
+            else if (rec.rank === 3) color = rankColors[3];
+
+            // Add marker for market
+            const marketMarker = new google.maps.Marker({
+                position: marketLocation,
+                map: map,
+                title: `${rec.market} (Rank #${rec.rank}) - Distance: ${rec.distance_km}km`,
+                icon: {
+                    url: `https://maps.google.com/mapfiles/ms/icons/${rec.rank === 1 ? 'yellow' : rec.rank <= 3 ? 'blue' : 'green'}-dot.png`
+                }
+            });
+            markers.push(marketMarker);
+
+            // Add info window for market marker
+            const infoContent = `
+                <div style="padding: 10px;">
+                    <h4 style="margin: 0 0 10px 0; color: ${rec.rank === 1 ? '#FFD700' : '#333'};">${rec.market}</h4>
+                    <p style="margin: 5px 0;"><strong>Rank:</strong> #${rec.rank}</p>
+                    <p style="margin: 5px 0;"><strong>Distance:</strong> ${rec.distance_km} km</p>
+                    <p style="margin: 5px 0;"><strong>Predicted Price:</strong> Rs. ${rec.predicted_price}</p>
+                    <p style="margin: 5px 0;"><strong>Transport Cost:</strong> Rs. ${rec.transport_cost}</p>
+                    <p style="margin: 5px 0;"><strong>Net Advantage:</strong> <span style="color: ${rec.net_advantage >= 0 ? 'green' : 'red'};">Rs. ${rec.net_advantage}</span></p>
+                </div>
+            `;
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: infoContent
+            });
+
+            marketMarker.addListener('click', () => {
+                infoWindow.open(map, marketMarker);
+            });
+
+            // Add polyline route from user to market
+            const route = new google.maps.Polyline({
+                path: [userLocation, marketLocation],
+                geodesic: true,
+                strokeColor: color,
+                strokeOpacity: rec.rank === 1 ? 1.0 : 0.7,
+                strokeWeight: rec.rank === 1 ? 4 : 2
+            });
+
+            route.setMap(map);
+            polylines.push(route);
+        });
+
+        // Add legend to map
+        addMapLegend();
+
+    } catch (error) {
+        console.error('Error showing recommendations on map:', error);
+    }
+}
+
+function addMapLegend() {
+    const legendDiv = document.createElement('div');
+    legendDiv.id = 'map-legend';
+    legendDiv.style.cssText = `
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        max-width: 200px;
+    `;
+
+    legendDiv.innerHTML = `
+        <div style="margin-bottom: 8px; font-weight: bold;">Route Colors:</div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <div style="width: 20px; height: 4px; background-color: #00FF00; margin-right: 8px;"></div>
+            <div>Rank #1 (Best Market)</div>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <div style="width: 20px; height: 4px; background-color: #4169E1; margin-right: 8px;"></div>
+            <div>Rank #2</div>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <div style="width: 20px; height: 4px; background-color: #FFA500; margin-right: 8px;"></div>
+            <div>Rank #3</div>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+            <div style="width: 20px; height: 4px; background-color: #808080; margin-right: 8px;"></div>
+            <div>Other Markets</div>
+        </div>
+    `;
+
+    if (map && map.controls) {
+        map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(legendDiv);
+    }
+}
+
+function clearMap() {
+    if (map) {
+        // Clear markers
+        markers.forEach(marker => marker.setMap(null));
+        markers = [];
+
+        // Clear polylines
+        polylines.forEach(polyline => polyline.setMap(null));
+        polylines = [];
+
+        // Clear legend if exists
+        const legend = document.getElementById('map-legend');
+        if (legend && legend.parentNode) {
+            legend.parentNode.removeChild(legend);
+        }
+    }
+}
+
+// Load Google Maps API
+function loadGoogleMaps() {
+    // Check if script is already loaded
+    if (window.google && window.google.maps) {
+        initMap();
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDrSy2r_gHTnLbILR1joImzwErOp56G-7M&callback=initMap`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = function() {
+        console.error('Failed to load Google Maps API.');
+    };
+    document.head.appendChild(script);
+}
+
+// Reset form & hide results (used for the Clear button and for page reloads)
+function resetFormAndResults() {
+    const form = document.getElementById('rankingForm');
+    if (form) form.reset();
+
+    // Manually clear key input fields (form.reset() restores HTML default values)
+    const fieldsToClear = [
+        'user_role',
+        'transport_cost',
+        'cultivation_cost',
+        'item',
+        'price_type',
+        'quantity_unit',
+        'quantity',
+        'province',
+        'district',
+        'ds_division',
+        'latitude',
+        'longitude'
+    ];
+
+    fieldsToClear.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                el.selectedIndex = 0;
+            } else {
+                el.value = '';
+            }
+        }
+    });
+
+    toggleCostField();
+    updateSectionTitles();
+    toggleLocationFields(true);
+
+    const mapPlaceholder = document.getElementById('mapPlaceholder');
+    if (mapPlaceholder) mapPlaceholder.style.display = 'flex';
+
+    clearMap();
+
+    const recSection = document.getElementById('recommendationsSection');
+    if (recSection) recSection.style.display = 'none';
+
+    const allRecSection = document.getElementById('allRecommendationsSection');
+    if (allRecSection) allRecSection.style.display = 'none';
+}
+
+// Clear results when page is refreshed/reloaded
+window.addEventListener('pageshow', (event) => {
+    const navigationEntries = performance.getEntriesByType('navigation');
+    const navType = navigationEntries.length ? navigationEntries[0].type : null;
+    if (event.persisted || navType === 'reload') {
+        resetFormAndResults();
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cost field based on current role
+    toggleCostField();
+    updateSectionTitles();
+
+    // Initialize location fields as enabled by default
+    toggleLocationFields(true);
+
+    // Load Google Maps
+    loadGoogleMaps();
+
+    // If we have form data from previous submission
+    {% if form_data %}
+    setTimeout(() => {
+        // Set role and update UI
+        const roleSelect = document.getElementById('user_role');
+        if (roleSelect) {
+            roleSelect.value = '{{ form_data.user_role }}';
+            toggleCostField();
+            updateSectionTitles();
+        }
+
+        // Set location if provided
+        const provinceSelect = document.getElementById('province');
+        if (provinceSelect && '{{ form_data.province }}') {
+            provinceSelect.value = '{{ form_data.province }}';
+            updateDistricts();
+
+            setTimeout(() => {
+                const districtSelect = document.getElementById('district');
+                if (districtSelect && '{{ form_data.district }}') {
+                    districtSelect.value = '{{ form_data.district }}';
+                    updateDSDivisions();
+
+                    setTimeout(() => {
+                        const dsSelect = document.getElementById('ds_division');
+                        if (dsSelect && '{{ form_data.ds_division }}') {
+                            dsSelect.value = '{{ form_data.ds_division }}';
+                            updateCoordinates();
+                        }
+                    }, 100);
+                }
+            }, 100);
+        }
+    }, 500);
+    {% endif %}
+});
+
+
+</script>
+{% endblock %}
+

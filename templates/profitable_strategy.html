@@ -1,0 +1,1459 @@
+{% extends "base.html" %}
+
+{% block title %}Profitable Business Strategy{% endblock %}
+
+{% block extra_css %}
+<style>
+        :root {
+            --primary-color: #2e7d32;
+            --primary-light: #4caf50;
+            --primary-dark: #1b5e20;
+            --secondary-color: #ff8f00;
+            --accent-color: #0277bd;
+            --success-color: #2e7d32;
+            --warning-color: #ff6f00;
+            --danger-color: #c62828;
+            --light-bg: #f8f9fa;
+            --dark-text: #263238;
+            --border-radius: 12px;
+            --box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9f5e9 100%);
+            color: var(--dark-text);
+            min-height: 100vh;
+        }
+
+        .page-hero {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            border-radius: var(--border-radius);
+            padding: 2.5rem 1.75rem;
+            color: #fff;
+            margin-bottom: 1.75rem;
+            box-shadow: var(--box-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-hero::before {
+            content: '';
+            position: absolute;
+            top: -40%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .page-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 250px;
+            height: 250px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .page-hero h2 {
+            position: relative;
+            z-index: 1;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .page-hero p {
+            position: relative;
+            font-size: 1.1rem;
+            font-weight: 100;
+            z-index: 1;
+            opacity: 0.9;
+        }
+
+        .card {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            background: white;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+            color: white;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            border-bottom: none;
+        }
+
+        .card-header i {
+            margin-right: 0.5rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--dark-text);
+            margin-bottom: 0.3rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 0.6rem 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #757575, #616161);
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            border: none;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #138496, #117a8b);
+        }
+
+        .result-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: var(--box-shadow);
+        }
+
+        .confidence-high {
+            color: var(--success-color);
+            font-weight: 700;
+        }
+
+        .confidence-medium {
+            color: var(--warning-color);
+            font-weight: 700;
+        }
+
+        .confidence-low {
+            color: var(--danger-color);
+            font-weight: 700;
+        }
+
+        .business-badge {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            color: var(--accent-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 0.3rem;
+        }
+
+        .probability-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-light), var(--primary-color));
+            border-radius: 4px;
+        }
+
+        .info-card {
+            background: var(--light-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-right: 1rem;
+        }
+
+        .risk-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .risk-high {
+            background: #ffebee;
+            color: var(--danger-color);
+        }
+
+        .risk-medium {
+            background: #fff3e0;
+            color: var(--warning-color);
+        }
+
+        .risk-low {
+            background: #e8f5e8;
+            color: var(--success-color);
+        }
+
+        .risk-very-low {
+            background: #e0f2f1;
+            color: #00695c;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            background: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #e8f5e8;
+            color: var(--primary-dark);
+        }
+
+        .accordion-button:focus {
+            box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+        }
+
+        .tooltip-icon {
+            color: var(--primary-color);
+            cursor: help;
+            margin-left: 0.3rem;
+        }
+
+        .market-info {
+            background: #f0f8ff;
+            border-left: 4px solid #17a2b8;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .cultivation-info {
+            background: #fff3e0;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .fetch-btn {
+            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-hero h2 {
+                font-size: 2rem;
+            }
+            .page-hero p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<div class="page-hero">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start">
+        <div>
+            <h2 class="mb-2"><i class="fas fa-lightbulb me-2"></i>Profitable Business Strategy</h2>
+            <p class="mb-0">Discover the most profitable business opportunities tailored to your profile. Our AI-powered model analyzes your role, purpose, financial situation, market access, and personal preferences to recommend the perfect agricultural business strategy.</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <span class="badge bg-white text-success py-2 px-3 shadow-sm">Fill the form → Get recommendations → Compare options</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+        <!-- Input Form Column -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user-circle"></i> Your Profile Information
+                </div>
+                <div class="card-body">
+                    <form id="predictionForm">
+                        <!-- Basic Information -->
+                        <h6 class="fw-bold text-success mb-3">
+                            <i class="fas fa-user me-2"></i>Basic Information
+                        </h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Role <i class="fas fa-question-circle tooltip-icon" data-bs-toggle="tooltip" title="Your primary role in agriculture"></i>
+                                </label>
+                                <select class="form-select" id="role" name="role" required>
+                                    <option value="farmer" selected>Farmer</option>
+                                    <option value="buyer">Buyer</option>
+                                    <option value="seller">Seller</option>
+                                    <option value="consumer">Consumer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Profession</label>
+                                <select class="form-select" id="profession" name="profession" required>
+                                    <option value="farming" selected>Farming</option>
+                                    <option value="business">Business</option>
+                                    <option value="government">Government</option>
+                                    <option value="private">Private Sector</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Purpose Section (Dynamic based on Role) -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Purpose *</label>
+                                <select class="form-select" name="purpose" id="purpose" required>
+                                    <option value="">-- Select Purpose --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Monthly Income (LKR)</label>
+                                <input type="number" class="form-control" id="monthly_income" name="monthly_income" value="85000" min="0" step="1000" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Income Source</label>
+                                <select class="form-select" id="income_source" name="income_source" required>
+                                    <option value="both" selected>Both</option>
+                                    <option value="profession">Profession Only</option>
+                                    <option value="business">Business Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Family Information -->
+                        <h6 class="fw-bold text-success mb-3 mt-4">
+                            <i class="fas fa-users me-2"></i>Family Information
+                        </h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Marital Status</label>
+                                <select class="form-select" id="marital_status" name="marital_status" required>
+                                    <option value="" disabled selected>Select marital status</option>
+                                    <option value="married" >Married</option>
+                                    <option value="unmarried">Unmarried</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="family_members_container">
+                                <label class="form-label">Family Members</label>
+                                <input type="number" class="form-control" id="family_members" name="family_members" value="0" min="1" max="20">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3" id="children_container">
+                            <div class="col-md-12">
+                                <label class="form-label">Children Under 16</label>
+                                <input type="number" class="form-control" id="children_under_16" name="children_under_16" value="0" min="0" max="10">
+                            </div>
+                        </div>
+
+                        <!-- Financial Information -->
+                        <h6 class="fw-bold text-success mb-3 mt-4">
+                            <i class="fas fa-wallet me-2"></i>Financial Information
+                        </h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Available Budget (LKR)</label>
+                                <input type="number" class="form-control" id="available_budget" name="available_budget" value="250000" min="0" step="10000" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Budget Source</label>
+                                <select class="form-select" id="budget_source" name="budget_source" required>
+                                    <option value="" disabled selected>Select a source</option>
+                                    <option value="saving" >Savings</option>
+                                    <option value="exchange">Exchange</option>
+                                    <option value="pawning">Pawning</option>
+                                    <option value="bank_loan">Bank Loan</option>
+                                    <option value="private_loan">Private Loan</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Cultivation Information (shown only for farmers - placed BEFORE Market Information) -->
+                        <div id="cultivationSection">
+                            <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                                <h6 class="fw-bold text-success mb-0">
+                                    <i class="fas fa-tractor me-2"></i>Cultivation Targeting
+                                </h6>
+                                <button type="button" class="btn btn-sm btn-info fetch-btn" onclick="fetchCultivationRecommendations()">
+                                    <i class="fas fa-sync-alt me-1"></i>Fetch from Component 3
+                                </button>
+                            </div>
+
+                            <div class="cultivation-info" id="cultivationInfo" style="display: none;">
+                                <small class="text-muted">Cultivation recommendations will appear here</small>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Cultivation Item</label>
+                                    <select class="form-select" id="cultivation_item" name="cultivation_item">
+                                        <option value="" disabled selected>Select an item</option>
+                                        <option value="Tomato">Tomato</option>
+                                        <option value="Brinjal">Brinjal</option>
+                                        <option value="Chili Pepper">Chili Pepper</option>
+                                        <option value="Pumpkin">Pumpkin</option>
+                                        <option value="Cabbage">Cabbage</option>
+                                        <option value="Carrot">Carrot</option>
+                                        <option value="Beans">Beans</option>
+                                        <option value="Lime">Lime</option>
+                                        <option value="Banana">Banana</option>
+                                        <option value="Papaya">Papaya</option>
+                                        <option value="Pineapple">Pineapple</option>
+                                        <option value="Bitter Gourd">Bitter Gourd</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Optimal Month</label>
+                                    <select class="form-select" id="optimal_month" name="optimal_month">
+                                        <option value="1" selected>January</option>
+                                        <option value="2">February</option>
+                                        <option value="3" >March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Season</label>
+                                    <select class="form-select" id="season" name="season">
+                                        <option value="Spring" selected>Spring</option>
+                                        <option value="Summer">Summer</option>
+                                        <option value="Autumn">Autumn</option>
+                                        <option value="Winter">Winter</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Profitability (0-1)</label>
+                                    <input type="number" class="form-control" id="cultivation_profitability" name="cultivation_profitability" value="0" min="0" max="1" step="0.01">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Risk (0-1)</label>
+                                    <input type="number" class="form-control" id="cultivation_risk" name="cultivation_risk" value="0" min="0" max="1" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Market Information (placed after Cultivation) -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                            <h6 class="fw-bold text-success mb-0">
+                                <i class="fas fa-store me-2"></i>Market Information
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-info fetch-btn" onclick="fetchMarketRecommendations()">
+                                <i class="fas fa-sync-alt me-1"></i>Fetch from Component 2
+                            </button>
+                        </div>
+
+                        <div class="market-info" id="marketInfo" style="display: none;">
+                            <small class="text-muted">Market recommendations will appear here</small>
+                        </div>
+
+                        <!-- NEW: Item Input Field (from Market Ranking) -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Item (from Market Ranking)</label>
+                                <input type="text" class="form-control" id="market_item" name="market_item" value="" placeholder="Enter item name">
+                                <small class="text-muted">This will be auto-filled from market recommendations</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Market Name</label>
+                                <select class="form-select" id="market_name" name="market_name" required>
+                                    <option value="" disabled selected>Select a market</option>
+                                    <option value="Dambulla">Dambulla</option>
+                                    <option value="Pettah">Pettah</option>
+                                    <option value="Narahenpita">Narahenpita</option>
+                                    <option value="Peliyagoda">Peliyagoda</option>
+                                    <option value="Negombo">Negombo</option>
+                                    <option value="Marandagahamula">Marandagahamula</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Predicted Price (Rs/kg)</label>
+                                <input type="number" class="form-control" id="predicted_price" name="predicted_price" value="0" min="0" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Distance (km)</label>
+                                <input type="number" class="form-control" id="distance_km" name="distance_km" min="0" step="0.01" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Transport Cost (Rs)</label>
+                                <input type="number" class="form-control" id="transport_cost" name="transport_cost" min="0" step="0.01" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Net Advantage (Rs)</label>
+                                <input type="number" class="form-control" id="net_advantage" name="net_advantage"  min="0" step="0.01" required>
+                            </div>
+                        </div>
+
+                            <!-- Location Information -->
+                        <h6 class="fw-bold mb-3 mt-4" style="color:white;">
+                            <i class="fas fa-map-marker-alt me-2" style="color:white;"></i>Location Information
+                        </h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label" style="color:white;">Latitude</label>
+                                <input type="number" class="form-control"
+                                    id="latitude" name="latitude"
+                                    value="7.2906" step="0.000001"
+                                    style="color:white; background-color:transparent; border:1px solid white;">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label" style="color:white;">Longitude</label>
+                                <input type="number" class="form-control"
+                                    id="longitude" name="longitude"
+                                    value="80.6337" step="0.000001"
+                                    style="color:white; background-color:transparent; border:1px solid white;">
+                            </div>
+                        </div>
+                                            <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-magic me-2"></i>Predict My Business Strategy
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="resetBtn">
+                                <i class="fas fa-undo me-2"></i>Reset to Defaults
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Model Info Card -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <i class="fas fa-info-circle"></i> Model Information
+                </div>
+                <div class="card-body">
+                    <div class="info-card d-flex align-items-center">
+                        <div class="info-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">AI Model: Random Forest Classifier</h6>
+                            <p class="mb-0 text-muted small">Accuracy: 98.7% | F1-Score: 98.2%</p>
+                        </div>
+                    </div>
+                    <div class="info-card d-flex align-items-center">
+                        <div class="info-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Training Data</h6>
+                            <p class="mb-0 text-muted small">40,000 samples | 12 business types</p>
+                        </div>
+                    </div>
+                    <div class="info-card d-flex align-items-center">
+                        <div class="info-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Features Used</h6>
+                            <p class="mb-0 text-muted small">30 features including engineered ratios</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Column -->
+        <div class="col-lg-7">
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" style="display: none;">
+                <div class="loader"></div>
+                <p class="text-center text-muted">Analyzing your profile...</p>
+            </div>
+
+            <!-- Results Container -->
+            <div id="resultsContainer" style="display: none;">
+                <!-- Main Prediction Card -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-crown"></i> Your Recommended Business Strategy
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h2 id="predictedBusinessName" class="fw-bold text-success mb-2">-</h2>
+                                <p id="predictedBusinessCode" class="text-muted mb-2">-</p>
+                                <div class="d-flex align-items-center mb-3">
+                                    <span class="me-3">Confidence:</span>
+                                    <div class="flex-grow-1" style="max-width: 200px;">
+                                        <div class="probability-bar">
+                                            <div id="confidenceBar" class="probability-fill" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <span id="confidenceValue" class="ms-3 fw-bold">-</span>
+                                    <span id="confidenceBadge" class="badge bg-success ms-2">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div id="riskBadge" class="risk-badge d-inline-block mb-2">-</div>
+                                <p class="mb-1"><i class="fas fa-coins text-warning me-1"></i> <span id="capitalRequired">-</span></p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <h6 class="fw-bold"><i class="fas fa-align-left me-2 text-success"></i>Business Description</h6>
+                        <p id="businessDescription" class="mb-4">-</p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold"><i class="fas fa-chart-pie me-2 text-success"></i>Key Considerations</h6>
+                                <ul class="list-unstyled" id="keyConsiderations">
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Start with market research</li>
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Build supplier relationships</li>
+                                    <li><i class="fas fa-check-circle text-success me-2"></i>Focus on quality control</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-bold"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Potential Challenges</h6>
+                                <ul class="list-unstyled" id="potentialChallenges">
+                                    <li><i class="fas fa-times-circle text-danger me-2"></i>Price fluctuations</li>
+                                    <li><i class="fas fa-times-circle text-danger me-2"></i>Transportation costs</li>
+                                    <li><i class="fas fa-times-circle text-danger me-2"></i>Seasonal demand</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternative Predictions -->
+                <div class="card mt-3">
+                    <div class="card-header bg-secondary text-white">
+                        <i class="fas fa-list-ol"></i> Alternative Business Options
+                    </div>
+                    <div class="card-body">
+                        <div id="alternativesContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Confidence Distribution Chart -->
+                <div class="card mt-3">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-chart-pie"></i> Confidence Distribution
+                    </div>
+                    <div class="card-body">
+                        <canvas id="confidenceChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Alert -->
+            <div id="errorAlert" class="alert alert-danger" style="display: none;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+
+            <!-- Initial State -->
+            <div id="initialState" class="text-center p-5">
+                <i class="fas fa-arrow-left fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Fill the form to get your personalized business strategy</h4>
+                <p class="text-muted">Our AI will analyze your profile and recommend the most profitable business type.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="card mt-4">
+        <div class="card-header bg-warning">
+            <i class="fas fa-question-circle"></i> Frequently Asked Questions
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            How accurate is this prediction model?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Our model achieves 78.7% accuracy on test data, with an F1-score of 78.2%. It has been trained on 40,000 synthetic profiles based on real agricultural market data in Sri Lanka.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            What factors are considered in the recommendation?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            The model considers your role (farmer/buyer/seller), purpose, financial capacity, family situation, market access (distance, transport costs), and cultivation preferences to make personalized recommendations.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            How should I use these recommendations?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Use the recommendations as a starting point for your business planning. Consider the top 3 options, evaluate your local market conditions, and consult with agricultural experts before making final decisions.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            Can I get a second opinion?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Absolutely! The model provides multiple alternative options with confidence scores. You can also consult with local agricultural officers or business development services for additional guidance.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Custom JavaScript -->
+<script>
+    // Purpose options based on role
+    const purposeOptions = {
+        buyer: [
+            {value: 'retail_other', text: 'Buying and selling with other businesses (Retail)'},
+            {value: 'retail_main', text: 'Buying and selling as the main business (Retail)'},
+            {value: 'food_business', text: 'Making foods as a business'},
+            {value: 'value_added_export', text: 'Making value added products (Focusing on the Export market)'}
+        ],
+        seller: [
+            {value: 'retail_other', text: 'Buying and selling with other businesses (Retail)'},
+            {value: 'collector', text: 'Collector and selling to the market'},
+            {value: 'retail_main', text: 'Buying and selling as the main business (Retail)'}
+        ],
+        farmer: [
+            {value: 'cultivate_sell', text: 'Cultivating for selling'},
+            {value: 'cultivate_own', text: 'Cultivating for selling by own'},
+            {value: 'food_business', text: 'Making foods as a business'},
+            {value: 'value_added_export', text: 'Making value added products (Focusing on the Export market)'}
+        ],
+        consumer: [
+            {value: 'budget_planning', text: 'Planning food budget for month'}
+        ]
+    };
+
+    // Business mapping for fallback
+    const businessMapping = {
+        'BUS_F01': 'Commercial Crop Farming',
+        'BUS_F02': 'Organic Farming',
+        'BUS_F03': 'Value-Added Farm Products',
+        'BUS_F04': 'Contract Farming',
+        'BUS_S01': 'Wholesale Produce Trader',
+        'BUS_S02': 'Agricultural Collector',
+        'BUS_S03': 'Commission Agent',
+        'BUS_B01': 'Retail Fruit & Vegetable Shop',
+        'BUS_B02': 'Value-Added Products for Export',
+        'BUS_B03': 'Food Processing Business',
+        'BUS_C01': 'Monthly Budget Optimization',
+        'BUS_C02': 'Community Buying Group'
+    };
+
+    const businessDescriptions = {
+        'BUS_F01': 'Start commercial farming of high-demand crops using modern techniques for maximum yield and profit.',
+        'BUS_F02': 'Focus on organic farming methods to produce premium-priced chemical-free produce for health-conscious consumers.',
+        'BUS_F03': 'Create value-added farm products like packaged honey, organic spices, or farm-made preserves.',
+        'BUS_F04': 'Enter into contract farming agreements with companies to grow specific crops at guaranteed prices.',
+        'BUS_S01': 'Become a wholesale trader buying in bulk from farmers and selling to retailers and distributors.',
+        'BUS_S02': 'Work as an agricultural collector gathering produce from multiple small farmers and supplying to larger markets.',
+        'BUS_S03': 'Act as a commission agent facilitating transactions between farmers and buyers for a percentage fee.',
+        'BUS_B01': 'Start a retail shop selling fresh fruits and vegetables directly to consumers. Focus on quality and competitive pricing.',
+        'BUS_B02': 'Process local produce into value-added products (dried fruits, juices, pickles) for export markets.',
+        'BUS_B03': 'Establish a food processing facility to convert agricultural produce into packaged foods for local and regional markets.',
+        'BUS_C01': 'Join or form a monthly budget optimization group to collectively purchase groceries at wholesale prices.',
+        'BUS_C02': 'Organize a community buying group to purchase directly from farmers, reducing costs for all members.'
+    };
+
+    const businessRisk = {
+        'BUS_F01': 'High',
+        'BUS_F02': 'Medium',
+        'BUS_F03': 'Medium',
+        'BUS_F04': 'Low',
+        'BUS_S01': 'Medium',
+        'BUS_S02': 'Low',
+        'BUS_S03': 'Low',
+        'BUS_B01': 'Medium',
+        'BUS_B02': 'High',
+        'BUS_B03': 'High',
+        'BUS_C01': 'Very Low',
+        'BUS_C02': 'Very Low'
+    };
+
+    const capitalRequired = {
+        'BUS_F01': 'LKR 300,000 - 1,500,000',
+        'BUS_F02': 'LKR 200,000 - 1,000,000',
+        'BUS_F03': 'LKR 150,000 - 800,000',
+        'BUS_F04': 'LKR 100,000 - 500,000',
+        'BUS_S01': 'LKR 200,000 - 1,000,000',
+        'BUS_S02': 'LKR 50,000 - 200,000',
+        'BUS_S03': 'LKR 20,000 - 100,000',
+        'BUS_B01': 'LKR 100,000 - 500,000',
+        'BUS_B02': 'LKR 500,000 - 2,000,000',
+        'BUS_B03': 'LKR 1,000,000 - 5,000,000',
+        'BUS_C01': 'LKR 10,000 - 50,000',
+        'BUS_C02': 'LKR 5,000 - 30,000'
+    };
+
+    const keyConsiderations = {
+        'BUS_F01': ['Use quality seeds/inputs', 'Implement modern techniques', 'Plan crop rotation', 'Monitor market prices'],
+        'BUS_F02': ['Obtain organic certification', 'Build soil health', 'Target premium markets', 'Maintain detailed records'],
+        'BUS_F03': ['Develop unique products', 'Create attractive packaging', 'Tell your farm story', 'Ensure food safety'],
+        'BUS_F04': ['Read contracts carefully', 'Meet quality specifications', 'Build long-term relationships', 'Plan for contingencies'],
+        'BUS_S01': ['Build storage facilities', 'Develop farmer network', 'Monitor market prices daily', 'Manage cash flow'],
+        'BUS_S02': ['Establish collection points', 'Build trust with farmers', 'Ensure timely payments', 'Maintain quality standards'],
+        'BUS_S03': ['Build reputation for fairness', 'Maintain good relationships', 'Keep accurate records', 'Stay informed on prices'],
+        'BUS_B01': ['Focus on high-demand items', 'Build relationships with farmers', 'Maintain quality standards', 'Offer competitive prices'],
+        'BUS_B02': ['Research export requirements', 'Invest in processing equipment', 'Build international contacts', 'Understand quality standards'],
+        'BUS_B03': ['Ensure food safety compliance', 'Develop efficient production', 'Create strong brand', 'Build distribution network'],
+        'BUS_C01': ['Organize regular meetings', 'Collect payments in advance', 'Share transport costs', 'Rotate responsibilities'],
+        'BUS_C02': ['Recruit committed members', 'Establish clear rules', 'Rotate responsibilities', 'Maintain transparency']
+    };
+
+    const potentialChallenges = {
+        'BUS_F01': ['Weather uncertainty', 'Pest/disease outbreaks', 'Input cost volatility', 'Market price fluctuations'],
+        'BUS_F02': ['Lower yields initially', 'Certification costs', 'Market access challenges', 'Pest management without chemicals'],
+        'BUS_F03': ['Product shelf life', 'Packaging costs', 'Brand building challenges', 'Scaling production'],
+        'BUS_F04': ['Contract dependency', 'Price fixing concerns', 'Quality pressure', 'Limited flexibility'],
+        'BUS_S01': ['Storage losses', 'Price volatility', 'Farmer loyalty issues', 'Transportation costs'],
+        'BUS_S02': ['Transport costs', 'Quality variation', 'Payment collection', 'Seasonal supply fluctuations'],
+        'BUS_S03': ['Commission pressure', 'Trust issues', 'Market fluctuations', 'Competition'],
+        'BUS_B01': ['Price fluctuations', 'Perishable inventory', 'Competition', 'Supplier reliability'],
+        'BUS_B02': ['Export regulations', 'Quality consistency', 'International competition', 'Currency fluctuations'],
+        'BUS_B03': ['High startup costs', 'Equipment maintenance', 'Food safety compliance', 'Supply chain management'],
+        'BUS_C01': ['Member commitment', 'Coordination difficulty', 'Trust issues', 'Fair distribution'],
+        'BUS_C02': ['Group dynamics', 'Decision making', 'Fair distribution', 'Maintaining engagement']
+    };
+
+    // Initialize tooltips and event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Role change handler for purpose dropdown
+        document.getElementById('role').addEventListener('change', function() {
+            const role = this.value;
+            const purposeSelect = document.getElementById('purpose');
+            const cultivationSection = document.getElementById('cultivationSection');
+
+            // Clear current options
+            purposeSelect.innerHTML = '<option value="">-- Select Purpose --</option>';
+
+            // Add new options based on role
+            if (role && purposeOptions[role]) {
+                purposeOptions[role].forEach(option => {
+                    const opt = document.createElement('option');
+                    opt.value = option.value;
+                    opt.textContent = option.text;
+                    purposeSelect.appendChild(opt);
+                });
+            }
+
+            // Toggle cultivation section based on role
+            if (role === 'farmer') {
+                cultivationSection.style.display = 'block';
+            } else {
+                cultivationSection.style.display = 'none';
+            }
+        });
+
+        // Trigger initial state
+        document.getElementById('role').dispatchEvent(new Event('change'));
+    });
+
+    // Fetch cultivation recommendations from Component 3
+    async function fetchCultivationRecommendations() {
+        try {
+            const month = document.getElementById('optimal_month').value;
+            const response = await fetch('/api/cultivation-predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    month: parseInt(month),
+                    category: 'All',
+                    risk_tolerance: 'medium'
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.recommendations && result.recommendations.length > 0) {
+                const topRec = result.recommendations[0];
+
+                // Update form fields
+                document.getElementById('cultivation_item').value = topRec.crop;
+                document.getElementById('cultivation_profitability').value = topRec.profitability_score;
+                document.getElementById('cultivation_risk').value = topRec.risk_score;
+
+                // Also update market item with the same crop
+                document.getElementById('market_item').value = topRec.crop;
+
+                // Extract month from planting timeline
+                const monthMatch = topRec.planting_timeline.match(/month (\d+)/i);
+                if (monthMatch) {
+                    document.getElementById('optimal_month').value = monthMatch[1];
+                }
+
+                // Update season based on month
+                const monthNum = parseInt(document.getElementById('optimal_month').value);
+                const seasons = ['Winter', 'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer', 'Summer', 'Autumn', 'Autumn', 'Autumn', 'Winter'];
+                document.getElementById('season').value = seasons[monthNum - 1];
+
+                // Show success message
+                const infoDiv = document.getElementById('cultivationInfo');
+                infoDiv.style.display = 'block';
+                infoDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Top Recommendation:</strong> ${topRec.crop}<br>
+                            <small>Profitability: ${(topRec.profitability_score * 100).toFixed(1)}% | Risk: ${(topRec.risk_score * 100).toFixed(1)}%</small>
+                        </div>
+                        <span class="badge bg-success">Fetched</span>
+                    </div>
+                `;
+
+                showToast('Cultivation recommendations fetched successfully!', 'success');
+            } else {
+                showToast('No cultivation recommendations found', 'warning');
+            }
+        } catch (error) {
+            console.error('Error fetching cultivation recommendations:', error);
+            showToast('Error fetching cultivation recommendations', 'danger');
+        }
+    }
+
+    // Fetch market recommendations from Component 2
+    async function fetchMarketRecommendations() {
+        try {
+            // Use market_item field instead of cultivation_item
+            const item = document.getElementById('market_item').value || 'Tomato';
+            const role = document.getElementById('role').value;
+
+            // Determine market role based on user role
+            const marketRole = role === 'farmer' ? 'seller' : (role === 'consumer' ? 'buyer' : role);
+
+            // Safely get latitude and longitude with fallback
+            const latField = document.getElementById('latitude');
+            const lonField = document.getElementById('longitude');
+            const defaultLat = 7.2906;
+            const defaultLon = 80.6337;
+            
+            const latitude = latField ? parseFloat(latField.value) || defaultLat : defaultLat;
+            const longitude = lonField ? parseFloat(lonField.value) || defaultLon : defaultLon;
+
+            const response = await fetch('/api/market-predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    item: item,
+                    price_type: marketRole === 'seller' ? 'Wholesale' : 'Retail',
+                    user_role: marketRole,
+                    latitude: latitude,
+                    longitude: longitude,
+                    transport_cost_per_km: 160,
+                    quantity: 100,
+                    quantity_unit: 'kg',
+                    // Calculate cultivation cost for farmers/sellers based on predicted price and profitability
+                    cultivation_cost: marketRole === 'seller' ? parseFloat(document.getElementById('predicted_price').value || 185.5) * (1 - (parseFloat(document.getElementById('cultivation_profitability').value) || 0.7)) : 0,
+                    profitability: parseFloat(document.getElementById('cultivation_profitability').value || 0.7)
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.recommendations && result.recommendations.length > 0) {
+                const topMarket = result.recommendations[0];
+
+                // Update form fields
+                document.getElementById('market_name').value = topMarket.market;
+                document.getElementById('predicted_price').value = topMarket.predicted_price;
+                document.getElementById('distance_km').value = topMarket.distance_km;
+                document.getElementById('transport_cost').value = topMarket.transport_cost;
+                document.getElementById('net_advantage').value = topMarket.net_advantage;
+
+                // Show success message
+                const infoDiv = document.getElementById('marketInfo');
+                infoDiv.style.display = 'block';
+                infoDiv.innerHTML = `
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>Best Market: ${topMarket.market}</strong>
+                            <span class="badge bg-info">Rank #1</span>
+                        </div>
+                        <div class="row small">
+                            <div class="col-6">Item: ${item}</div>
+                            <div class="col-6">Price: Rs. ${topMarket.predicted_price}/kg</div>
+                            <div class="col-6">Distance: ${topMarket.distance_km} km</div>
+                            <div class="col-6">Transport: Rs. ${topMarket.transport_cost}</div>
+                            <div class="col-6">Net Advantage: Rs. ${topMarket.net_advantage}</div>
+                        </div>
+                    </div>
+                `;
+
+                showToast('Market recommendations fetched successfully!', 'success');
+            } else {
+                showToast('No market recommendations found', 'warning');
+            }
+        } catch (error) {
+            console.error('Error fetching market recommendations:', error);
+            showToast('Error fetching market recommendations', 'danger');
+        }
+    }
+
+    // Form submission handler
+    document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Show loading, hide results and initial state
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+        document.getElementById('initialState').style.display = 'none';
+        document.getElementById('errorAlert').style.display = 'none';
+
+        // Collect form data
+        const formData = {
+            role: document.getElementById('role').value,
+            purpose: document.getElementById('purpose').value,
+            profession: document.getElementById('profession').value,
+            monthly_income: parseFloat(document.getElementById('monthly_income').value),
+            income_source: document.getElementById('income_source').value,
+            marital_status: document.getElementById('marital_status').value,
+            family_members: parseInt(document.getElementById('family_members').value) || 0,
+            children_under_16: parseInt(document.getElementById('children_under_16').value) || 0,
+            available_budget: parseFloat(document.getElementById('available_budget').value),
+            budget_source: document.getElementById('budget_source').value,
+            market_item: document.getElementById('market_item').value,  // Added market_item
+            market_name: document.getElementById('market_name').value,
+            predicted_price: parseFloat(document.getElementById('predicted_price').value),
+            distance_km: parseFloat(document.getElementById('distance_km').value),
+            transport_cost: parseFloat(document.getElementById('transport_cost').value),
+            net_advantage: parseFloat(document.getElementById('net_advantage').value),
+            latitude: parseFloat(document.getElementById('latitude').value) || 7.2906,
+            longitude: parseFloat(document.getElementById('longitude').value) || 80.6337
+        };
+
+        // Add cultivation data if role is farmer
+        if (document.getElementById('role').value === 'farmer') {
+            formData.cultivation_item = document.getElementById('cultivation_item').value;
+            formData.cultivation_profitability = parseFloat(document.getElementById('cultivation_profitability').value);
+            formData.cultivation_risk = parseFloat(document.getElementById('cultivation_risk').value);
+            formData.optimal_month = parseInt(document.getElementById('optimal_month').value);
+            formData.season = document.getElementById('season').value;
+        }
+
+        try {
+            // Make API call
+            const response = await fetch('/api/business-predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                displayResults(result);
+            } else {
+                // Use fallback prediction if API fails
+                const fallbackResult = generateFallbackPrediction(formData);
+                displayResults(fallbackResult);
+                showToast('Using fallback prediction model', 'warning');
+            }
+        } catch (error) {
+            console.error('API error:', error);
+            // Use fallback prediction on network error
+            const fallbackResult = generateFallbackPrediction(formData);
+            displayResults(fallbackResult);
+            showToast('Using fallback prediction due to network error', 'warning');
+        } finally {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+    });
+
+    // Generate fallback prediction based on role
+    function generateFallbackPrediction(formData) {
+        let businessCode = 'BUS_F01';
+
+        if (formData.role === 'farmer') {
+            if (formData.available_budget > 500000) {
+                businessCode = 'BUS_F01'; // Commercial Farming
+            } else if (formData.cultivation_profitability > 0.8) {
+                businessCode = 'BUS_F02'; // Organic Farming
+            } else {
+                businessCode = 'BUS_F04'; // Contract Farming
+            }
+        } else if (formData.role === 'buyer') {
+            if (formData.available_budget > 1000000) {
+                businessCode = 'BUS_B02'; // Export
+            } else if (formData.available_budget > 500000) {
+                businessCode = 'BUS_B03'; // Food Processing
+            } else {
+                businessCode = 'BUS_B01'; // Retail Shop
+            }
+        } else if (formData.role === 'seller') {
+            if (formData.available_budget > 500000) {
+                businessCode = 'BUS_S01'; // Wholesale Trader
+            } else {
+                businessCode = 'BUS_S02'; // Agricultural Collector
+            }
+        } else if (formData.role === 'consumer') {
+            businessCode = 'BUS_C01'; // Budget Planning
+        }
+
+        return {
+            success: true,
+            predicted_business_code: businessCode,
+            predicted_business_name: businessMapping[businessCode] || businessCode,
+            confidence: 0.75,
+            confidence_level: 'Medium',
+            confidence_color: 'warning',
+            description: businessDescriptions[businessCode] || '',
+            risk_level: businessRisk[businessCode] || 'Medium',
+            capital_required: capitalRequired[businessCode] || 'LKR 100,000 - 500,000',
+            key_considerations: keyConsiderations[businessCode] || ['Conduct market research', 'Start small and scale', 'Seek expert advice'],
+            potential_challenges: potentialChallenges[businessCode] || ['Market uncertainty', 'Financial management', 'Skill development'],
+            top_predictions: [
+                {business_code: businessCode, business_name: businessMapping[businessCode] || businessCode, confidence: 0.75, risk_level: businessRisk[businessCode] || 'Medium'}
+            ]
+        };
+    }
+
+    // Reset button handler
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('predictionForm').reset();
+        document.getElementById('role').value = 'farmer';
+        document.getElementById('profession').value = 'farming';
+        document.getElementById('monthly_income').value = '85000';
+        document.getElementById('income_source').value = 'both';
+        document.getElementById('marital_status').value = 'married';
+        document.getElementById('family_members').value = '4';
+        document.getElementById('children_under_16').value = '2';
+        document.getElementById('available_budget').value = '250000';
+        document.getElementById('budget_source').value = 'saving';
+        document.getElementById('market_item').value = 'Tomato';  // Added reset for market_item
+        document.getElementById('market_name').value = 'Dambulla';
+        document.getElementById('predicted_price').value = '185.5';
+        document.getElementById('distance_km').value = '45.2';
+        document.getElementById('transport_cost').value = '7200';
+        document.getElementById('net_advantage').value = '12800';
+        document.getElementById('cultivation_item').value = 'Tomato';
+        document.getElementById('cultivation_profitability').value = '0.85';
+        document.getElementById('cultivation_risk').value = '0.40';
+        document.getElementById('optimal_month').value = '3';
+        document.getElementById('season').value = 'Spring';
+        document.getElementById('latitude').value = '7.2906';
+        document.getElementById('longitude').value = '80.6337';
+
+        document.getElementById('role').dispatchEvent(new Event('change'));
+
+        // Hide results and info sections
+        document.getElementById('resultsContainer').style.display = 'none';
+        document.getElementById('initialState').style.display = 'block';
+        document.getElementById('errorAlert').style.display = 'none';
+        document.getElementById('cultivationInfo').style.display = 'none';
+        document.getElementById('marketInfo').style.display = 'none';
+    });
+
+    function displayResults(result) {
+        // Update main prediction
+        document.getElementById('predictedBusinessName').textContent = result.predicted_business_name || 'Unknown';
+        document.getElementById('predictedBusinessCode').textContent = result.predicted_business_code || '-';
+        document.getElementById('businessDescription').textContent = result.description || 'No description available';
+
+        // Update confidence
+        const confidence = result.confidence || 0.5;
+        const confidencePercent = (confidence * 100).toFixed(1);
+        document.getElementById('confidenceValue').textContent = confidencePercent + '%';
+        document.getElementById('confidenceBar').style.width = confidencePercent + '%';
+
+        const confidenceBadge = document.getElementById('confidenceBadge');
+        confidenceBadge.textContent = result.confidence_level || 'Medium';
+        confidenceBadge.className = 'badge bg-' + (result.confidence_color || 'warning') + ' ms-2';
+
+        // Update risk badge
+        const riskBadge = document.getElementById('riskBadge');
+        riskBadge.textContent = result.risk_level || 'Medium';
+        riskBadge.className = 'risk-badge';
+        const riskLevel = (result.risk_level || '').toLowerCase();
+        if (riskLevel.includes('high')) {
+            riskBadge.classList.add('risk-high');
+        } else if (riskLevel.includes('medium')) {
+            riskBadge.classList.add('risk-medium');
+        } else if (riskLevel.includes('low')) {
+            riskBadge.classList.add('risk-low');
+        } else {
+            riskBadge.classList.add('risk-very-low');
+        }
+
+        document.getElementById('capitalRequired').textContent = result.capital_required || 'LKR 100,000 - 500,000';
+
+        // Update key considerations
+        const considerations = document.getElementById('keyConsiderations');
+        considerations.innerHTML = '';
+        const considerationsList = result.key_considerations ||
+            keyConsiderations[result.predicted_business_code] ||
+            ['Conduct market research', 'Start small and scale', 'Seek expert advice'];
+
+        considerationsList.forEach(item => {
+            considerations.innerHTML += `<li><i class="fas fa-check-circle text-success me-2"></i>${item}</li>`;
+        });
+
+        // Update potential challenges
+        const challenges = document.getElementById('potentialChallenges');
+        challenges.innerHTML = '';
+        const challengesList = result.potential_challenges ||
+            potentialChallenges[result.predicted_business_code] ||
+            ['Market uncertainty', 'Financial management', 'Skill development'];
+
+        challengesList.forEach(item => {
+            challenges.innerHTML += `<li><i class="fas fa-times-circle text-danger me-2"></i>${item}</li>`;
+        });
+
+        // Update alternatives
+        const alternativesContainer = document.getElementById('alternativesContainer');
+        alternativesContainer.innerHTML = '';
+
+        if (result.top_predictions && result.top_predictions.length > 1) {
+            result.top_predictions.slice(1).forEach((alt, index) => {
+                const altCard = document.createElement('div');
+                altCard.className = 'info-card mb-2';
+                altCard.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${alt.business_name || alt.business_code}</strong><br>
+                            <small class="text-muted">${alt.business_code || ''}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold">${((alt.confidence || 0) * 100).toFixed(1)}%</span><br>
+                            <span class="badge ${(alt.risk_level || '').toLowerCase().includes('low') ? 'bg-success' : (alt.risk_level || '').toLowerCase().includes('medium') ? 'bg-warning' : 'bg-danger'}">${alt.risk_level || 'Medium'}</span>
+                        </div>
+                    </div>
+                    <div class="probability-bar mt-2">
+                        <div class="probability-fill" style="width: ${((alt.confidence || 0) * 100).toFixed(1)}%"></div>
+                    </div>
+                `;
+                alternativesContainer.appendChild(altCard);
+            });
+        } else {
+            alternativesContainer.innerHTML = '<p class="text-muted text-center">No alternative options available</p>';
+        }
+
+        // Create confidence chart
+        if (result.top_predictions && result.top_predictions.length > 0) {
+            if (typeof Chart !== 'undefined') {
+                createConfidenceChart(result.top_predictions);
+            }
+        }
+
+        // Show results
+        document.getElementById('resultsContainer').style.display = 'block';
+    }
+
+    function createConfidenceChart(predictions) {
+        const canvas = document.getElementById('confidenceChart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        // Destroy existing chart if it exists
+        if (window.confidenceChart instanceof Chart) {
+            window.confidenceChart.destroy();
+        }
+
+        const labels = predictions.map(p => (p.business_name || p.business_code || 'Unknown').substring(0, 20) + '...');
+        const data = predictions.map(p => (p.confidence || 0) * 100);
+        const colors = ['#2e7d32', '#4caf50', '#8bc34a', '#cddc39', '#ffc107'];
+
+        window.confidenceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Confidence (%)',
+                    data: data,
+                    backgroundColor: colors.slice(0, data.length),
+                    borderColor: '#1b5e20',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Confidence (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Confidence: ${context.raw.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toastContainer';
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            toastContainer.style.zIndex = '1050';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+
+        const icon = type === 'success' ? 'fa-check-circle' :
+                     type === 'danger' ? 'fa-exclamation-circle' :
+                     type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="fas ${icon} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Initialize and show
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        // Remove after hide
+        toast.addEventListener('hidden.bs.toast', function () {
+            toast.remove();
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,6 @@
+{
+  "model_file": "price_prediction_model.txt",
+  "features_file": "features.pkl",
+  "encoders_file": "encoders.pkl",
+  "metadata_file": "model_metadata.pkl"
+}

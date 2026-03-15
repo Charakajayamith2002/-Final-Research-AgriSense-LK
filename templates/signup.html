@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create Account</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" required
+                                       placeholder="Enter your email">
+                            </div>
+                        </div>
+
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" required
+                                       placeholder="Choose a username">
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password"
+                                       required minlength="6" placeholder="Minimum 6 characters">
+                            </div>
+                            <small class="text-muted">Password must be at least 6 characters long</small>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="mb-4">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="confirm_password"
+                                       name="confirm_password" required minlength="6"
+                                       placeholder="Confirm your password">
+                            </div>
+                            <div id="passwordMatch" class="form-text"></div>
+                        </div>
+
+                        <!-- User Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label">I am a:</label>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card text-center user-type-card" id="buyerCard">
+                                        <div class="card-body">
+                                            <i class="fas fa-home fa-3x mb-3 text-success"></i>
+                                            <h5>Buyer</h5>
+                                            <p class="small text-muted">Looking to purchase properties</p>
+                                            <input type="radio" class="btn-check" name="user_type"
+                                                   value="buyer" id="buyer" checked>
+                                            <label class="btn btn-outline-success" for="buyer">
+                                                Select Buyer
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card text-center user-type-card" id="sellerCard">
+                                        <div class="card-body">
+                                            <i class="fas fa-handshake fa-3x mb-3 text-primary"></i>
+                                            <h5>Seller</h5>
+                                            <p class="small text-muted">Selling or renting properties</p>
+                                            <input type="radio" class="btn-check" name="user_type"
+                                                   value="seller" id="seller">
+                                            <label class="btn btn-outline-primary" for="seller">
+                                                Select Seller
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+
+                        <!-- Login Link -->
+                        <div class="text-center mt-4">
+                            <p class="mb-0">Already have an account?
+                                <a href="{{ url_for('login') }}" class="text-decoration-none">
+                                    <strong>Sign In</strong>
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Features by User Type -->
+            <div class="mt-4">
+                <div id="buyerFeatures" class="feature-info">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Buyer Benefits</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>Personalized property recommendations
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>Risk assessment and price advice
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>Save favorite properties
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>Compare different properties
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-success me-2"></i>Get notifications for new listings
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div id="sellerFeatures" class="feature-info" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Seller Benefits</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-primary me-2"></i>List unlimited properties
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-primary me-2"></i>Professional property management
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-primary me-2"></i>Track property views and interest
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-primary me-2"></i>Get price recommendations
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-check text-primary me-2"></i>Direct communication with buyers
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .user-type-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .user-type-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-check:checked + label {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+
+    #buyerCard.active {
+        border-color: #198754;
+        background-color: rgba(25, 135, 84, 0.05);
+    }
+
+    #sellerCard.active {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    .feature-info {
+        transition: opacity 0.3s ease;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password confirmation validation
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const passwordMatchDiv = document.getElementById('passwordMatch');
+
+        function validatePassword() {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (password !== confirmPassword) {
+                passwordMatchDiv.textContent = "Passwords do not match!";
+                passwordMatchDiv.style.color = "#dc3545";
+                confirmPasswordInput.style.borderColor = "#dc3545";
+                return false;
+            } else if (password.length < 6) {
+                passwordMatchDiv.textContent = "Password must be at least 6 characters";
+                passwordMatchDiv.style.color = "#dc3545";
+                return false;
+            } else {
+                passwordMatchDiv.textContent = "Passwords match ✓";
+                passwordMatchDiv.style.color = "#198754";
+                confirmPasswordInput.style.borderColor = "#198754";
+                return true;
+            }
+        }
+
+        passwordInput.addEventListener('input', validatePassword);
+        confirmPasswordInput.addEventListener('input', validatePassword);
+
+        // User type selection
+        const buyerRadio = document.getElementById('buyer');
+        const sellerRadio = document.getElementById('seller');
+        const buyerCard = document.getElementById('buyerCard');
+        const sellerCard = document.getElementById('sellerCard');
+        const buyerFeatures = document.getElementById('buyerFeatures');
+        const sellerFeatures = document.getElementById('sellerFeatures');
+
+        function updateUserTypeDisplay() {
+            if (buyerRadio.checked) {
+                buyerCard.classList.add('active');
+                sellerCard.classList.remove('active');
+                buyerFeatures.style.display = 'block';
+                sellerFeatures.style.display = 'none';
+            } else {
+                sellerCard.classList.add('active');
+                buyerCard.classList.remove('active');
+                buyerFeatures.style.display = 'none';
+                sellerFeatures.style.display = 'block';
+            }
+        }
+
+        buyerRadio.addEventListener('change', updateUserTypeDisplay);
+        sellerRadio.addEventListener('change', updateUserTypeDisplay);
+
+        // Form submission validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            if (!validatePassword()) {
+                event.preventDefault();
+                alert('Please make sure passwords match and are at least 6 characters long.');
+                return;
+            }
+
+            const selectedType = document.querySelector('input[name="user_type"]:checked');
+            if (!selectedType) {
+                event.preventDefault();
+                alert('Please select whether you are a Buyer or Seller.');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+            submitBtn.disabled = true;
+        });
+    });
+</script>
+{% endblock %}

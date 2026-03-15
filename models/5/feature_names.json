@@ -1,0 +1,247 @@
+{
+  "feature_names": [
+    "monthly_income",
+    "family_members",
+    "children_under_16",
+    "available_budget",
+    "loan_amount",
+    "loan_rate",
+    "loan_period_months",
+    "location_lat",
+    "location_lon",
+    "cultivation_profitability",
+    "cultivation_risk",
+    "optimal_month",
+    "predicted_price",
+    "distance_km",
+    "net_advantage",
+    "feasibility_score",
+    "expected_monthly_profit",
+    "break_even_months",
+    "success",
+    "has_loan_data",
+    "budget_to_income_ratio",
+    "loan_to_budget_ratio",
+    "adult_members",
+    "dependency_ratio",
+    "cost_per_km",
+    "price_distance_ratio",
+    "advantage_per_kg",
+    "market_attractiveness",
+    "financial_health",
+    "role"
+  ],
+  "num_features": 30,
+  "feature_details": [
+    {
+      "Index": 0,
+      "Feature Name": "monthly_income",
+      "Data Type": "float64",
+      "Sample Values": "[-0.03982318480001843, 1.4171302376706776, 1.26004...",
+      "Unique Values": 46593
+    },
+    {
+      "Index": 1,
+      "Feature Name": "family_members",
+      "Data Type": "float64",
+      "Sample Values": "[0.7807077788591484, 0.04269135486143683, -0.32631...",
+      "Unique Values": 9
+    },
+    {
+      "Index": 2,
+      "Feature Name": "children_under_16",
+      "Data Type": "float64",
+      "Sample Values": "[0.6192202691256411, -0.7079408696576653, -0.04436...",
+      "Unique Values": 6
+    },
+    {
+      "Index": 3,
+      "Feature Name": "available_budget",
+      "Data Type": "float64",
+      "Sample Values": "[0.24191144250333282, 0.6348402145017119, -0.10602...",
+      "Unique Values": 48020
+    },
+    {
+      "Index": 4,
+      "Feature Name": "loan_amount",
+      "Data Type": "float64",
+      "Sample Values": "[-0.6575090673321834, 2.45903789223852, -0.6575090...",
+      "Unique Values": 18110
+    },
+    {
+      "Index": 5,
+      "Feature Name": "loan_rate",
+      "Data Type": "float64",
+      "Sample Values": "[-0.7225175953044871, 0.09600374442451394, -0.7225...",
+      "Unique Values": 19097
+    },
+    {
+      "Index": 6,
+      "Feature Name": "loan_period_months",
+      "Data Type": "float64",
+      "Sample Values": "[-0.6817540960199683, 0.20086981077133356, -0.6817...",
+      "Unique Values": 120
+    },
+    {
+      "Index": 7,
+      "Feature Name": "location_lat",
+      "Data Type": "float64",
+      "Sample Values": "[-1.3792776249427945, -0.15722207844364164, 1.6264...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 8,
+      "Feature Name": "location_lon",
+      "Data Type": "float64",
+      "Sample Values": "[-1.3591291517721686, 1.3208174447201924, 0.463105...",
+      "Unique Values": 48022
+    },
+    {
+      "Index": 9,
+      "Feature Name": "cultivation_profitability",
+      "Data Type": "float64",
+      "Sample Values": "[-0.6813661613168164, -0.6813661613168164, -0.6813...",
+      "Unique Values": 15966
+    },
+    {
+      "Index": 10,
+      "Feature Name": "cultivation_risk",
+      "Data Type": "float64",
+      "Sample Values": "[-0.6042310649239752, -0.6042310649239752, -0.6042...",
+      "Unique Values": 10765
+    },
+    {
+      "Index": 11,
+      "Feature Name": "optimal_month",
+      "Data Type": "float64",
+      "Sample Values": "[-0.6104222357625378, -0.6104222357625378, -0.6104...",
+      "Unique Values": 11
+    },
+    {
+      "Index": 12,
+      "Feature Name": "predicted_price",
+      "Data Type": "float64",
+      "Sample Values": "[-0.5369757691076785, 1.0217634082641591, -0.94536...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 13,
+      "Feature Name": "distance_km",
+      "Data Type": "float64",
+      "Sample Values": "[-1.6687526272774562, -0.9904863743382065, -0.2172...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 14,
+      "Feature Name": "net_advantage",
+      "Data Type": "float64",
+      "Sample Values": "[-1.5206924436412246, 0.29212372776211504, 0.86619...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 15,
+      "Feature Name": "feasibility_score",
+      "Data Type": "float64",
+      "Sample Values": "[-2.215250521495204, 1.7828887877525552, -0.024216...",
+      "Unique Values": 47914
+    },
+    {
+      "Index": 16,
+      "Feature Name": "expected_monthly_profit",
+      "Data Type": "float64",
+      "Sample Values": "[-1.7093403027164544, 1.4933019479661696, -1.23937...",
+      "Unique Values": 47839
+    },
+    {
+      "Index": 17,
+      "Feature Name": "break_even_months",
+      "Data Type": "float64",
+      "Sample Values": "[-0.2684242556553659, 1.0188811342709985, -0.32972...",
+      "Unique Values": 60
+    },
+    {
+      "Index": 18,
+      "Feature Name": "success",
+      "Data Type": "float64",
+      "Sample Values": "[-0.6382820176635344, -0.6382820176635344, -0.6382...",
+      "Unique Values": 2
+    },
+    {
+      "Index": 19,
+      "Feature Name": "has_loan_data",
+      "Data Type": "float64",
+      "Sample Values": "[-0.8111796867024312, 1.2327724872711643, -0.81117...",
+      "Unique Values": 2
+    },
+    {
+      "Index": 20,
+      "Feature Name": "budget_to_income_ratio",
+      "Data Type": "float64",
+      "Sample Values": "[0.01579008063517865, -0.31901966820725575, -0.638...",
+      "Unique Values": 48021
+    },
+    {
+      "Index": 21,
+      "Feature Name": "loan_to_budget_ratio",
+      "Data Type": "float64",
+      "Sample Values": "[-0.5433558855762787, 0.7679090023621554, -0.54335...",
+      "Unique Values": 16758
+    },
+    {
+      "Index": 22,
+      "Feature Name": "adult_members",
+      "Data Type": "float64",
+      "Sample Values": "[0.612390333893666, 0.612390333893666, -0.42332814...",
+      "Unique Values": 9
+    },
+    {
+      "Index": 23,
+      "Feature Name": "dependency_ratio",
+      "Data Type": "float64",
+      "Sample Values": "[0.6943297247439862, -0.7810586334049608, 0.694329...",
+      "Unique Values": 24
+    },
+    {
+      "Index": 24,
+      "Feature Name": "cost_per_km",
+      "Data Type": "float64",
+      "Sample Values": "[-1.0494050366276644, -1.3929316858975538, 1.01739...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 25,
+      "Feature Name": "price_distance_ratio",
+      "Data Type": "float64",
+      "Sample Values": "[1.4050937194516377, 0.3902492398399861, -0.392506...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 26,
+      "Feature Name": "advantage_per_kg",
+      "Data Type": "float64",
+      "Sample Values": "[-1.7057817068660885, -0.16718279770904304, 1.0108...",
+      "Unique Values": 27561
+    },
+    {
+      "Index": 27,
+      "Feature Name": "market_attractiveness",
+      "Data Type": "float64",
+      "Sample Values": "[-0.15119474058350824, 1.4042184453558946, -0.3251...",
+      "Unique Values": 48024
+    },
+    {
+      "Index": 28,
+      "Feature Name": "financial_health",
+      "Data Type": "float64",
+      "Sample Values": "[0.8474570752855116, -0.9248637255290107, 0.847457...",
+      "Unique Values": 13666
+    },
+    {
+      "Index": 29,
+      "Feature Name": "role",
+      "Data Type": "int64",
+      "Sample Values": "[0, 0, 0]...",
+      "Unique Values": 1
+    }
+  ]
+}

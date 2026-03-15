@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Login - AgriSense{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>Login to AgriSense</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{{ url_for('login') }}">
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" required
+                                       placeholder="Enter your email address">
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" required
+                                       placeholder="Enter your password">
+                            </div>
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </button>
+                        </div>
+
+                        <!-- Forgot Password -->
+                        <div class="text-center mb-3">
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal" class="text-decoration-none">
+                                Forgot Password?
+                            </a>
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="position-relative my-4">
+                            <hr>
+                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">
+                                OR
+                            </span>
+                        </div>
+
+                        <!-- Register Link -->
+                        <div class="text-center">
+                            <p class="mb-2">Don't have an account?</p>
+                            <a href="{{ url_for('register') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-plus me-2"></i>Create New Account
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Demo Accounts Info -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Demo Accounts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6>Buyer Account</h6>
+                            <p class="mb-1"><small>Email: buyer@demo.com</small></p>
+                            <p class="mb-0"><small>Password: demo123</small></p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6>Seller Account</h6>
+                            <p class="mb-1"><small>Email: seller@demo.com</small></p>
+                            <p class="mb-0"><small>Password: demo123</small></p>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>Note: These accounts are for demonstration purposes only.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your email address and we'll send you instructions to reset your password.</p>
+                <form id="forgotPasswordForm">
+                    <div class="mb-3">
+                        <label for="resetEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="resetEmail" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="requestPasswordReset()">Send Reset Link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+            submitBtn.disabled = true;
+        });
+    });
+
+    function requestPasswordReset() {
+        const email = document.getElementById('resetEmail').value;
+        if (!email) {
+            alert('Please enter your email address');
+            return;
+        }
+
+        alert('Password reset link would be sent to: ' + email + '\n\nNote: This feature requires email server configuration.');
+        $('#forgotPasswordModal').modal('hide');
+    }
+</script>
+{% endblock %}
