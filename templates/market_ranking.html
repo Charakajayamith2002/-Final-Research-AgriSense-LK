@@ -222,13 +222,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
 .loc-status { display:none; font-size:.78rem; border-radius:8px; padding:9px 13px; margin-bottom:12px; color:#fff }
 .loc-status.loc-error { background:rgba(248,113,113,.15); border:1px solid rgba(248,113,113,.35) }
 </style>
-<!-- Leaflet (OpenStreetMap) - no API key needed -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""
-/>
 {% endblock %}
 
 {% block content %}
@@ -239,13 +232,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
   <div class="container">
     <div class="hero-inner">
       <div class="animate-in">
-        <div class="hero-badge"><i class="fas fa-map-marked-alt"></i> Geo-Optimized</div>
-        <h1>Market Opportunity<br><em>Ranking</em></h1>
-        <p>Find the best markets based on predicted prices, transport cost, and your selected quantity — ordered by highest net advantage.</p>
+        <div class="hero-badge" data-i18n="mr_badge"><i class="fas fa-map-marked-alt"></i> Geo-Optimized</div>
+        <h1><span data-i18n="mr_hero_title">Market Opportunity</span><br><em data-i18n="mr_hero_title_em">Ranking</em></h1>
+        <p data-i18n="mr_hero_desc">Find the best markets based on predicted prices, transport cost, and your selected quantity — ordered by highest net advantage.</p>
       </div>
       <div class="animate-in" style="animation-delay:.12s">
         <div class="hero-steps">
-          <strong>Select role</strong> → <strong>Enter values</strong> → <strong>Get results</strong>
+          <strong data-i18n="mr_step1">Select role</strong> → <strong data-i18n="mr_step2">Enter values</strong> → <strong data-i18n="mr_step3">Get results</strong>
         </div>
       </div>
     </div>
@@ -265,243 +258,29 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
           <div class="fc-header">
             <div class="fc-header-left">
               <div class="hi"><i class="fas fa-sliders-h"></i></div>
-              <h3>Market Search Parameters</h3>
+              <h3 data-i18n="mr_form_title">Market Search Parameters</h3>
             </div>
           </div>
           <div class="fc-body">
 
-<<<<<<< HEAD
-                <form method="POST" id="rankingForm">
-                    <!-- Role Selection Section -->
-                    <div class="form-section">
-                        <legend class="h5 border-bottom pb-2">Role Selection</legend>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label required-field">Your Role</label>
-                                <select class="form-select" name="user_role" id="user_role" required onchange="toggleCostField(); updateSectionTitles();">
-                                    <option value="">Select Role</option>
-                                    <option value="buyer" {% if form_data and form_data.user_role == 'buyer' %}selected{% endif %}>Buyer</option>
-                                    <option value="seller" {% if form_data and form_data.user_role == 'seller' %}selected{% endif %}>Seller</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cost Spending Section -->
-                    <div class="form-section">
-                        <legend class="h5 border-bottom pb-2">Cost Spending</legend>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label required-field">Transport Cost (Rs./km)</label>
-                                <input type="number" class="form-control" name="transport_cost" id="transport_cost"
-                                       step="0.1" min="1" max="1000" required
-                                       value="{% if form_data %}{{ form_data.transport_cost }}{% else %}160{% endif %}">
-                                <small class="text-muted">Default: Rs. 160 per km (can be changed)</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Additional Transport Cost (Rs.)</label>
-                                <input type="number" class="form-control" name="additional_transport_cost" id="additional_transport_cost"
-                                       step="0.1" min="0" max="1000000"
-                                       value="{% if form_data %}{{ form_data.additional_transport_cost|default(0) }}{% else %}0{% endif %}">
-                                <small class="text-muted">Fixed extra charge (e.g., freezer/refrigerated vehicle)</small>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3" id="cultivation_cost_container">
-                                <label class="form-label" id="cultivation_cost_label">
-                                    {% if form_data and form_data.user_role == 'seller' %}
-                                    <span class="required-field">Total Cost (Cultivation)</span>
-                                    {% else %}
-                                    Total Cost (Cultivation)
-                                    {% endif %}
-                                </label>
-                                <input type="number" class="form-control" name="cultivation_cost" id="cultivation_cost"
-                                       step="0.1" min="0" max="1000000"
-                                       value="{% if form_data %}{{ form_data.cultivation_cost }}{% else %}0{% endif %}"
-                                       placeholder="Required for Sellers only">
-                                <small class="text-muted" id="cultivation_cost_note">
-                                    {% if form_data and form_data.user_role == 'seller' %}
-                                    Required for Sellers (Cost for the quantity specified below)
-                                    {% else %}
-                                    Required only for Sellers
-                                    {% endif %}
-                                </small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Current Market Price (Rs./kg)
-                                    <span data-bs-toggle="tooltip" title="Your known price for this item. Helps the AI model give more accurate predictions.">ℹ️</span>
-                                </label>
-                                <input type="number" class="form-control" name="reference_price" id="reference_price"
-                                       step="0.01" min="0"
-                                       value="{% if form_data %}{{ form_data.get('reference_price', '') }}{% endif %}"
-                                       placeholder="Optional but improves accuracy">
-                                <small class="text-muted">Enter today's price if you know it</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Target Item & Quantity Selection Section -->
-                    <div class="form-section">
-                        <legend class="h5 border-bottom pb-2" id="quantity_section_title">
-                            {% if form_data and form_data.user_role == 'buyer' %}
-                            Target Item & Quantity Selection for Buyers
-                            {% elif form_data and form_data.user_role == 'seller' %}
-                            Target Item & Quantity Selection for Sellers
-                            {% else %}
-                            Target Item & Quantity Selection
-                            {% endif %}
-                        </legend>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label required-field">Item</label>
-                                <select class="form-select" name="item" id="item" required>
-                                    <option value="">Select Item</option>
-                                    {% for category, data in items.items() %}
-                                        <optgroup label="{{ category }}">
-                                            {% for item in data.local %}
-                                                <option value="{{ item }}" {% if form_data and form_data.item == item %}selected{% endif %}>{{ item }}</option>
-                                            {% endfor %}
-                                            {% if data.imported %}
-                                                {% for item in data.imported %}
-                                                    <option value="{{ item }}" {% if form_data and form_data.item == item %}selected{% endif %}>{{ item }} (Imp)</option>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </optgroup>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label required-field">Price Type</label>
-                                <select class="form-select" name="price_type" required>
-                                    <option value="Wholesale" {% if form_data and form_data.price_type == 'Wholesale' %}selected{% endif %}>Wholesale</option>
-                                    <option value="Retail" {% if form_data and form_data.price_type == 'Retail' %}selected{% endif %}>Retail</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label required-field">Quantity Unit</label>
-                                <select class="form-select" name="quantity_unit" id="quantity_unit" required>
-                                    <option value="kg" {% if form_data and form_data.quantity_unit == 'kg' %}selected{% endif %}>Kilogram (kg)</option>
-                                    <option value="g" {% if form_data and form_data.quantity_unit == 'g' %}selected{% endif %}>Gram (g)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-8 mb-3">
-                                <label class="form-label required-field">Quantity</label>
-                                <input type="number" class="form-control" name="quantity" id="quantity"
-                                       step="0.01" min="0.01" max="10000" required
-                                       value="{% if form_data %}{{ form_data.quantity }}{% else %}1{% endif %}"
-                                       placeholder="Enter quantity">
-                                <small class="text-muted">
-                                    {% if form_data and form_data.user_role == 'seller' %}
-                                    This quantity determines the Total Cost (Cultivation) above
-                                    {% else %}
-                                    Buying quantity for cost calculation
-                                    {% endif %}
-                                </small>
-                            </div>
-                        </div>
-
-                        <div class="calculation-note">
-                            <i class="fas fa-calculator me-1"></i>
-                            <span id="calculation_formula">
-                                {% if form_data and form_data.user_role == 'buyer' %}
-                                For Buyers: Net Advantage = (Most expensive market cost) - (Predicted Price × Quantity + Transport)
-                                {% elif form_data and form_data.user_role == 'seller' %}
-                                For Sellers: Net Advantage = (Predicted Price × Quantity) - (Cultivation + Transport Costs)
-                                {% else %}
-                                Select role to see calculation formula
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Location Selection Section -->
-                    <div class="form-section">
-                        <legend class="h5 border-bottom pb-2">Your Location</legend>
-
-                        <div class="alert alert-info mb-3">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Select your location or use current location
-                            <button type="button" class="btn btn-outline-info btn-sm ms-3" onclick="useCurrentLocation()">
-                                <i class="fas fa-location-arrow me-1"></i>Use My Current Location
-                            </button>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Province</label>
-                                <select class="form-select" name="province" id="province" onchange="updateDistricts()" disabled>
-                                    <option value="">Select Province</option>
-                                    {% for province in provinces %}
-                                        <option value="{{ province }}">{{ province }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">District</label>
-                                <select class="form-select" name="district" id="district" onchange="updateDSDivisions()" disabled>
-                                    <option value="">Select District</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Divisional Secretariat</label>
-                                <select class="form-select" name="ds_division" id="ds_division" onchange="updateCoordinates()" disabled>
-                                    <option value="">Select DS Division</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label required-field">Latitude</label>
-                                <input type="number" class="form-control" name="latitude" id="latitude"
-                                       step="0.000001" required readonly
-                                       value="{% if form_data %}{{ form_data.latitude }}{% else %}7.2906{% endif %}">
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label required-field">Longitude</label>
-                                <input type="number" class="form-control" name="longitude" id="longitude"
-                                       step="0.000001" required readonly
-                                       value="{% if form_data %}{{ form_data.longitude }}{% else %}80.6337{% endif %}">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-info btn-lg flex-grow-1">
-                            <i class="fas fa-search me-2"></i>Find Best Markets
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-lg flex-grow-1" onclick="resetFormAndResults()">
-                            <i class="fas fa-eraser me-2"></i>Clear / Reset
-                        </button>
-                    </div>
-                </form>
-=======
             {% if error %}
             <div class="error-alert">
               <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>{{ error }}
->>>>>>> main
             </div>
             {% endif %}
 
             <form method="POST" id="rankingForm">
 
               <!-- Role -->
-              <div class="fsec-title"><i class="fas fa-user-tag"></i> Role Selection</div>
+              <div class="fsec-title" data-i18n="mr_sec_role"><i class="fas fa-user-tag"></i> Role Selection</div>
               <div class="fields-grid c2" style="margin-bottom:20px;">
                 <div class="fg">
-                  <label class="form-label req">Your Role</label>
+                  <label class="form-label req" data-i18n="mr_lbl_role">Your Role</label>
                   <select class="form-select" name="user_role" id="user_role" required
                           onchange="toggleCostField();updateSectionTitles();">
-                    <option value="">Select Role</option>
-                    <option value="buyer"  {% if form_data and form_data.user_role=='buyer'  %}selected{% endif %}>Buyer</option>
-                    <option value="seller" {% if form_data and form_data.user_role=='seller' %}selected{% endif %}>Seller</option>
+                    <option value="" data-i18n="mr_opt_select_role">Select Role</option>
+                    <option value="buyer"  {% if form_data and form_data.user_role=='buyer'  %}selected{% endif %} data-i18n="ps_opt_buyer">Buyer</option>
+                    <option value="seller" {% if form_data and form_data.user_role=='seller' %}selected{% endif %} data-i18n="ps_opt_seller">Seller</option>
                   </select>
                 </div>
               </div>
@@ -509,39 +288,39 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
               <div class="sec-divider"></div>
 
               <!-- Costs -->
-              <div class="fsec-title"><i class="fas fa-coins"></i> Cost Information</div>
+              <div class="fsec-title" data-i18n="mr_sec_cost"><i class="fas fa-coins"></i> Cost Information</div>
               <div class="fields-grid c2" style="margin-bottom:14px;">
                 <div class="fg">
-                  <label class="form-label req">Transport Cost <span style="font-weight:400;color:var(--tmut)">(Rs./km)</span></label>
+                  <label class="form-label req"><span data-i18n="mr_lbl_transport">Transport Cost</span> <span style="font-weight:400;color:var(--tmut)">(Rs./km)</span></label>
                   <input type="number" class="form-control" name="transport_cost" id="transport_cost"
                          step="0.1" min="1" max="1000" required
                          value="{% if form_data %}{{ form_data.transport_cost }}{% else %}160{% endif %}">
-                  <span class="form-hint">Default: Rs.160 per km</span>
+                  <span class="form-hint" data-i18n="mr_hint_transport">Default: Rs.160 per km</span>
                 </div>
                 <div class="fg">
-                  <label class="form-label">Additional Transport Cost <span style="font-weight:400;color:var(--tmut)">(Rs.)</span></label>
+                  <label class="form-label"><span data-i18n="mr_lbl_add_transport">Additional Transport Cost</span> <span style="font-weight:400;color:var(--tmut)">(Rs.)</span></label>
                   <input type="number" class="form-control" name="additional_transport_cost" id="additional_transport_cost"
                          step="0.1" min="0" max="1000000"
                          value="{% if form_data %}{{ form_data.additional_transport_cost|default(0) }}{% else %}0{% endif %}">
-                  <span class="form-hint">Fixed extra charge (e.g. refrigerated vehicle)</span>
+                  <span class="form-hint" data-i18n="mr_hint_add_transport">Fixed extra charge (e.g. refrigerated vehicle)</span>
                 </div>
               </div>
               <div class="fields-grid c2">
                 <div class="fg" id="cultivation_cost_container">
-                  <label class="form-label" id="cultivation_cost_label">Total Cost <span style="font-weight:400;color:var(--tmut)">(Cultivation)</span></label>
+                  <label class="form-label" id="cultivation_cost_label"><span data-i18n="mr_lbl_cult_cost">Total Cost</span> <span style="font-weight:400;color:var(--tmut)">(Cultivation)</span></label>
                   <input type="number" class="form-control" name="cultivation_cost" id="cultivation_cost"
                          step="0.1" min="0" max="1000000"
                          value="{% if form_data %}{{ form_data.cultivation_cost }}{% else %}0{% endif %}"
-                         placeholder="Required for Sellers only">
-                  <span class="form-hint" id="cultivation_cost_note">Required only for Sellers</span>
+                         data-i18n-placeholder="mr_ph_cult_cost" placeholder="Required for Sellers only">
+                  <span class="form-hint" id="cultivation_cost_note" data-i18n="mr_hint_cult_cost">Required only for Sellers</span>
                 </div>
                 <div class="fg">
-                  <label class="form-label">Current Market Price <span style="font-weight:400;color:var(--tmut)">(Rs./kg)</span></label>
+                  <label class="form-label"><span data-i18n="mr_lbl_ref_price">Current Market Price</span> <span style="font-weight:400;color:var(--tmut)">(Rs./kg)</span></label>
                   <input type="number" class="form-control" name="reference_price" id="reference_price"
                          step="0.01" min="0"
                          value="{% if form_data %}{{ form_data.get('reference_price','') }}{% endif %}"
-                         placeholder="Optional — improves accuracy">
-                  <span class="form-hint">Enter today's price if you know it</span>
+                         data-i18n-placeholder="mr_ph_ref_price" placeholder="Optional — improves accuracy">
+                  <span class="form-hint" data-i18n="mr_hint_ref_price">Enter today's price if you know it</span>
                 </div>
               </div>
 
@@ -555,9 +334,9 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
               </div>
               <div class="fields-grid c2" style="margin-bottom:14px;">
                 <div class="fg">
-                  <label class="form-label req">Item</label>
+                  <label class="form-label req" data-i18n="mr_lbl_item">Item</label>
                   <select class="form-select" name="item" id="item" required>
-                    <option value="">Select Item</option>
+                    <option value="" data-i18n="mr_opt_select_item">Select Item</option>
                     {% for category, data in items.items() %}
                       <optgroup label="{{ category }}">
                         {% for item in data.local %}
@@ -573,27 +352,27 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
                   </select>
                 </div>
                 <div class="fg">
-                  <label class="form-label req">Price Type</label>
+                  <label class="form-label req" data-i18n="mr_lbl_price_type">Price Type</label>
                   <select class="form-select" name="price_type" required>
-                    <option value="Wholesale" {% if form_data and form_data.price_type=='Wholesale' %}selected{% endif %}>Wholesale</option>
-                    <option value="Retail"    {% if form_data and form_data.price_type=='Retail'    %}selected{% endif %}>Retail</option>
+                    <option value="Wholesale" {% if form_data and form_data.price_type=='Wholesale' %}selected{% endif %} data-i18n="mr_opt_wholesale">Wholesale</option>
+                    <option value="Retail"    {% if form_data and form_data.price_type=='Retail'    %}selected{% endif %} data-i18n="mr_opt_retail">Retail</option>
                   </select>
                 </div>
               </div>
               <div class="fields-grid c2" style="margin-bottom:12px;">
                 <div class="fg">
-                  <label class="form-label req">Quantity Unit</label>
+                  <label class="form-label req" data-i18n="mr_lbl_qty_unit">Quantity Unit</label>
                   <select class="form-select" name="quantity_unit" id="quantity_unit" required>
-                    <option value="kg" {% if form_data and form_data.quantity_unit=='kg' %}selected{% endif %}>Kilogram (kg)</option>
-                    <option value="g"  {% if form_data and form_data.quantity_unit=='g'  %}selected{% endif %}>Gram (g)</option>
+                    <option value="kg" {% if form_data and form_data.quantity_unit=='kg' %}selected{% endif %} data-i18n="mr_opt_kg">Kilogram (kg)</option>
+                    <option value="g"  {% if form_data and form_data.quantity_unit=='g'  %}selected{% endif %} data-i18n="mr_opt_g">Gram (g)</option>
                   </select>
                 </div>
                 <div class="fg">
-                  <label class="form-label req">Quantity</label>
+                  <label class="form-label req" data-i18n="mr_lbl_qty">Quantity</label>
                   <input type="number" class="form-control" name="quantity" id="quantity"
                          step="0.01" min="0.01" max="10000" required
                          value="{% if form_data %}{{ form_data.quantity }}{% else %}1{% endif %}"
-                         placeholder="Enter quantity">
+                         data-i18n-placeholder="mr_ph_qty" placeholder="Enter quantity">
                 </div>
               </div>
               <div class="calc-note">
@@ -608,40 +387,40 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
               <div class="sec-divider"></div>
 
               <!-- Location -->
-              <div class="fsec-title"><i class="fas fa-map-marker-alt"></i> Your Location</div>
-              <p style="font-size:.82rem;color:var(--tmut);margin-bottom:12px;">Select your location using the dropdowns below, or use GPS to auto-fill coordinates.</p>
+              <div class="fsec-title" data-i18n="mr_sec_location"><i class="fas fa-map-marker-alt"></i> Your Location</div>
+              <p style="font-size:.82rem;color:var(--tmut);margin-bottom:12px;" data-i18n="mr_loc_desc">Select your location using the dropdowns below, or use GPS to auto-fill coordinates.</p>
 
               <div class="fields-grid c3" style="margin-bottom:14px;">
                 <div class="fg">
-                  <label class="form-label">Province</label>
+                  <label class="form-label" data-i18n="mr_lbl_province">Province</label>
                   <select class="form-select" name="province" id="province" onchange="updateDistricts()" disabled>
-                    <option value="">Select Province</option>
+                    <option value="" data-i18n="mr_opt_select_province">Select Province</option>
                     {% for province in provinces %}
                       <option value="{{ province }}">{{ province }}</option>
                     {% endfor %}
                   </select>
                 </div>
                 <div class="fg">
-                  <label class="form-label">District</label>
+                  <label class="form-label" data-i18n="mr_lbl_district">District</label>
                   <select class="form-select" name="district" id="district" onchange="updateDSDivisions()" disabled>
-                    <option value="">Select District</option>
+                    <option value="" data-i18n="mr_opt_select_district">Select District</option>
                   </select>
                 </div>
                 <div class="fg">
-                  <label class="form-label">DS Division</label>
+                  <label class="form-label" data-i18n="mr_lbl_ds">DS Division</label>
                   <select class="form-select" name="ds_division" id="ds_division" onchange="updateCoordinates()" disabled>
-                    <option value="">Select DS Division</option>
+                    <option value="" data-i18n="mr_opt_select_ds">Select DS Division</option>
                   </select>
                 </div>
               </div>
 
               <div class="location-panel">
-                <div class="location-panel-label"><i class="fas fa-crosshairs"></i> GPS Coordinates</div>
+                <div class="location-panel-label" data-i18n="mr_gps_label"><i class="fas fa-crosshairs"></i> GPS Coordinates</div>
 
                 <!-- Live location button -->
                 <button type="button" id="locBtn" class="loc-btn" onclick="getLiveLocation()">
                   <i class="fas fa-location-arrow" id="locBtnIcon"></i>
-                  <span id="locBtnText">Use My Current Location</span>
+                  <span id="locBtnText" data-i18n="mr_loc_btn">Use My Current Location</span>
                 </button>
 
                 <!-- Location name card (shown after GPS success) -->
@@ -666,13 +445,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
                 <!-- Coordinate inputs (auto-filled by GPS or dropdown) -->
                 <div class="fields-grid c2">
                   <div class="fg">
-                    <label class="form-label">Latitude</label>
+                    <label class="form-label" data-i18n="mr_lbl_lat">Latitude</label>
                     <input type="number" class="form-control" name="latitude" id="latitude"
                            step="0.000001" required readonly
                            value="{% if form_data %}{{ form_data.latitude }}{% else %}7.2906{% endif %}">
                   </div>
                   <div class="fg">
-                    <label class="form-label">Longitude</label>
+                    <label class="form-label" data-i18n="mr_lbl_lon">Longitude</label>
                     <input type="number" class="form-control" name="longitude" id="longitude"
                            step="0.000001" required readonly
                            value="{% if form_data %}{{ form_data.longitude }}{% else %}80.6337{% endif %}">
@@ -681,10 +460,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
               </div>
 
               <div class="form-actions" style="margin-top:22px;">
-                <button type="submit" class="btn-submit">
+                <button type="submit" class="btn-submit" data-i18n="mr_btn_submit">
                   <i class="fas fa-search"></i> Find Best Markets
                 </button>
-                <button type="button" class="btn-reset" onclick="resetFormAndResults()">
+                <button type="button" class="btn-reset" data-i18n="mr_btn_reset" onclick="resetFormAndResults()">
                   <i class="fas fa-eraser"></i> Clear / Reset
                 </button>
               </div>
@@ -698,20 +477,20 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
         <div class="map-card animate-in" style="animation-delay:.1s;">
           <div class="map-header">
             <div class="hi"><i class="fas fa-map"></i></div>
-            <h3>Market Locations Map</h3>
+            <h3 data-i18n="mr_map_title">Market Locations Map</h3>
           </div>
           <div class="map-container">
             <div id="googleMap"></div>
             <div class="map-placeholder" id="mapPlaceholder">
               <i class="fas fa-map-marked-alt"></i>
-              <h5>Market Locations</h5>
-              <p>Select a location to view routes on the map</p>
+              <h5 data-i18n="mr_map_state_title">Market Locations</h5>
+              <p data-i18n="mr_map_state_desc">Select a location to view routes on the map</p>
             </div>
           </div>
           <div class="map-legend-strip">
-            <div class="map-legend-item"><i class="fas fa-map-pin" style="color:#ef4444;"></i> Your Location</div>
-            <div class="map-legend-item"><i class="fas fa-shopping-cart" style="color:var(--g500);"></i> Market Locations</div>
-            <div class="map-legend-item"><i class="fas fa-route" style="color:#f59e0b;"></i> Best Route</div>
+            <div class="map-legend-item" data-i18n="mr_legend_you"><i class="fas fa-map-pin" style="color:#ef4444;"></i> Your Location</div>
+            <div class="map-legend-item" data-i18n="mr_legend_markets"><i class="fas fa-shopping-cart" style="color:var(--g500);"></i> Market Locations</div>
+            <div class="map-legend-item" data-i18n="mr_legend_route"><i class="fas fa-route" style="color:#f59e0b;"></i> Best Route</div>
           </div>
         </div>
         <!-- /MAP CARD -->
@@ -733,7 +512,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
           <div class="sc-body">
 
             <div class="best-mkt-hero">
-              <div class="best-mkt-label">Best Market</div>
+              <div class="best-mkt-label" data-i18n="mr_best_label">Best Market</div>
               <div class="best-mkt-name">{{ recommendations.best_market }}</div>
               <div class="best-mkt-sub">Out of {{ recommendations.total_markets }} markets analyzed</div>
             </div>
@@ -751,7 +530,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
               <p class="rank-expl">{{ rec.explanation }}</p>
               <div class="rank-meta">
                 <div class="rank-meta-cell">
-                  <span class="lbl">Transport</span>
+                  <span class="lbl" data-i18n="mr_lbl_transport_meta">Transport</span>
                   <span class="val">Rs. {{ rec.transport_cost }}</span>
                 </div>
                 <div class="rank-meta-cell">
@@ -764,15 +543,15 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
 
             <div class="summary-strip">
               <div class="summary-cell">
-                <span class="lbl">Avg. Price</span>
+                <span class="lbl" data-i18n="mr_sum_avg_price">Avg. Price</span>
                 <span class="val">Rs. {{ "%.2f"|format(recommendations.recommendations|map(attribute='predicted_price')|sum / recommendations.recommendations|length) }}/kg</span>
               </div>
               <div class="summary-cell">
-                <span class="lbl">Avg. Distance</span>
+                <span class="lbl" data-i18n="mr_sum_avg_dist">Avg. Distance</span>
                 <span class="val">{{ "%.1f"|format(recommendations.recommendations|map(attribute='distance_km')|sum / recommendations.recommendations|length) }} km</span>
               </div>
               <div class="summary-cell" style="grid-column:span 2;">
-                <span class="lbl">Quantity Analyzed</span>
+                <span class="lbl" data-i18n="mr_sum_qty">Quantity Analyzed</span>
                 <span class="val">{{ form_data.quantity if form_data else 1 }} {{ form_data.quantity_unit if form_data else 'kg' }} ({{ recommendations.quantity_kg|default((form_data.quantity|float if form_data and form_data.quantity else 1)) }} kg)</span>
               </div>
             </div>
@@ -786,8 +565,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
           <div style="width:60px;height:60px;background:var(--g100);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--g500);margin:0 auto 14px;">
             <i class="fas fa-chart-bar"></i>
           </div>
-          <h4 style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--td);margin-bottom:7px;">Results appear here</h4>
-          <p style="font-size:.84rem;color:var(--tmut);line-height:1.6;">Fill in the form and click <strong>Find Best Markets</strong> to see ranked market recommendations.</p>
+          <h4 style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--td);margin-bottom:7px;" data-i18n="mr_empty_title">Results appear here</h4>
+          <p style="font-size:.84rem;color:var(--tmut);line-height:1.6;" data-i18n="mr_empty_desc">Fill in the form and click Find Best Markets to see ranked market recommendations.</p>
         </div>
         {% endif %}
       </div>
@@ -807,7 +586,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="tc-badge"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>{{ recommendations.recommendations|length }} Markets</span>
           <button id="downloadPdfBtn" onclick="downloadResultsPdf()" style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.32)'" onmouseout="this.style.background='rgba(255,255,255,.2)'">
-            <i class="fas fa-file-pdf"></i> Download PDF
+            <i class="fas fa-file-pdf"></i> <span data-i18n="mr_btn_pdf">Download PDF</span>
           </button>
         </div>
       </div>
@@ -815,13 +594,13 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
         <table class="as-table">
           <thead>
             <tr>
-              <th style="text-align:center;">Rank</th>
-              <th>Market</th>
-              <th>Price (Rs/kg)</th>
-              <th>Distance</th>
-              <th>Transport (Rs)</th>
+              <th style="text-align:center;" data-i18n="mr_th_rank">Rank</th>
+              <th data-i18n="mr_th_market">Market</th>
+              <th data-i18n="mr_th_price">Price (Rs/kg)</th>
+              <th data-i18n="mr_th_distance">Distance</th>
+              <th data-i18n="mr_th_transport">Transport (Rs)</th>
               <th>{% if form_data and form_data.user_role=='buyer' %}Net Advantage{% else %}Net Revenue{% endif %} (Rs)</th>
-              <th style="width:100%;">Explanation</th>
+              <th style="width:100%;" data-i18n="mr_th_explanation">Explanation</th>
             </tr>
           </thead>
           <tbody>
@@ -857,80 +636,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
   </div>
 </div>
 
-<<<<<<< HEAD
-<!-- All Recommendations Table -->
-{% if recommendations and recommendations.recommendations|length > 3 %}
-<div id="allRecommendationsSection">
-    <div class="card mt-4">
-        <div class="card-header bg-secondary text-white">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i>
-                {% if form_data and form_data.user_role == 'buyer' %}
-                All Market Recommendations for Buyers
-                {% elif form_data and form_data.user_role == 'seller' %}
-                All Market Recommendations for Sellers
-                {% else %}
-                All Market Recommendations
-                {% endif %}
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Rank</th>
-                            <th>Market</th>
-                            <th>Predicted Price (Rs/kg)</th>
-                            <th>Distance (km)</th>
-                            <th>Transport Cost (Rs)</th>
-                            <th>
-                                {% if form_data and form_data.user_role == 'buyer' %}
-                                Net Advantage (Rs)
-                                {% else %}
-                                Net Revenue (Rs)
-                                {% endif %}
-                            </th>
-                            <th>Explanation</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rec in recommendations.recommendations %}
-                        <tr>
-                            <td><span class="badge {% if rec.rank == 1 %}bg-warning{% elif rec.rank == 2 %}bg-secondary{% else %}bg-danger{% endif %}">#{{ rec.rank }}</span></td>
-                            <td><strong>{{ rec.market }}</strong></td>
-                            <td>Rs. {{ rec.predicted_price }}</td>
-                            <td>{{ rec.distance_km }} km</td>
-                            <td>Rs. {{ rec.transport_cost }}</td>
-                            <td class="{% if rec.net_advantage >= 0 %}text-success{% else %}text-danger{% endif %}">
-                                Rs. {{ rec.net_advantage }}
-                            </td>
-                            <td><small>{{ rec.explanation }}</small></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Page data for JS (avoids API keys and keeps JS lint-friendly) -->
-<div
-  id="marketRankingData"
-  data-recommendations='{{ recommendations|tojson|safe if recommendations else "null" }}'
-  data-form-data='{{ form_data|tojson|safe if form_data else "null" }}'
-></div>
-{% endblock %}
-
-{% block extra_js %}
-<!-- Leaflet (OpenStreetMap) - no API key needed -->
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
-=======
 <!-- Page data for JS -->
 <div id="marketRankingData"
      data-recommendations='{{ recommendations|tojson|safe if recommendations else "null" }}'
@@ -943,7 +648,6 @@ body { font-family:'DM Sans',sans-serif; background:var(--g50); color:var(--td);
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
->>>>>>> main
 <script>
 /* ── LOCATION DATA ── */
 const locationData = {"Western Province":{"Colombo District":{"Colombo":{"lat":6.9271,"lon":79.8612},"Thimbirigasyaya":{"lat":6.89,"lon":79.87},"Dehiwala":{"lat":6.8567,"lon":79.8633},"Ratmalana":{"lat":6.82,"lon":79.885},"Moratuwa":{"lat":6.7833,"lon":79.8833},"Sri Jayawardenepura Kotte":{"lat":6.91,"lon":79.895},"Maharagama":{"lat":6.85,"lon":79.925},"Kesbewa":{"lat":6.87,"lon":79.94},"Kaduwela":{"lat":6.93,"lon":79.98},"Homagama":{"lat":6.84,"lon":80.02},"Kolonnawa":{"lat":6.92,"lon":79.905},"Seethawaka":{"lat":6.95,"lon":80.15},"Padukka":{"lat":6.83,"lon":80.09}},"Gampaha District":{"Gampaha":{"lat":7.0916,"lon":79.9997},"Minuwangoda":{"lat":7.1667,"lon":79.95},"Divulapitiya":{"lat":7.25,"lon":80.0},"Mirigama":{"lat":7.2333,"lon":80.1167},"Attanagalla":{"lat":7.1167,"lon":80.15},"Negombo":{"lat":7.2083,"lon":79.8358},"Katana":{"lat":7.25,"lon":79.9},"Wattala":{"lat":6.9833,"lon":79.8833},"Ja-Ela":{"lat":7.0833,"lon":79.9},"Mahara":{"lat":7.15,"lon":80.05},"Dompe":{"lat":7.0,"lon":80.05},"Biyagama":{"lat":6.95,"lon":80.0},"Kelaniya":{"lat":6.95,"lon":79.9167}},"Kalutara District":{"Kalutara":{"lat":6.5831,"lon":79.9597},"Panadura":{"lat":6.7133,"lon":79.9042},"Bandaragama":{"lat":6.7167,"lon":79.9833},"Horana":{"lat":6.7167,"lon":80.0667},"Mathugama":{"lat":6.5167,"lon":80.1167},"Walallawita":{"lat":6.65,"lon":80.25},"Beruwala":{"lat":6.4667,"lon":79.9833},"Dodangoda":{"lat":6.5833,"lon":80.1333},"Bulathsinhala":{"lat":6.6667,"lon":80.1833},"Madurawela":{"lat":6.6333,"lon":80.2167},"Millaniya":{"lat":6.75,"lon":80.05},"Palindanuwara":{"lat":6.55,"lon":80.35},"Agalawatta":{"lat":6.55,"lon":80.1667}}},"Central Province":{"Kandy District":{"Kandy":{"lat":7.2964,"lon":80.635},"Udunuwara":{"lat":7.2333,"lon":80.6833},"Yatinuwara":{"lat":7.2833,"lon":80.5667},"Pathadumbara":{"lat":7.3167,"lon":80.7167},"Udapalatha":{"lat":7.1833,"lon":80.7667},"Ganga Ihala Korale":{"lat":7.3333,"lon":80.5167},"Harispattuwa":{"lat":7.2667,"lon":80.6},"Poojapitiya":{"lat":7.4,"lon":80.5667},"Kundasale":{"lat":7.2667,"lon":80.7},"Minipe":{"lat":7.2333,"lon":80.8333},"Panvila":{"lat":7.15,"lon":80.6333},"Udadumbara":{"lat":7.3333,"lon":80.7667},"Delthota":{"lat":7.1667,"lon":80.7667},"Hatharaliyadda":{"lat":7.3167,"lon":80.9333},"Doluwa":{"lat":7.25,"lon":80.85},"Medadumbara":{"lat":7.2833,"lon":80.8},"Thumpane":{"lat":7.3667,"lon":80.8833},"Kothmale":{"lat":7.0667,"lon":80.5833},"Pathahewaheta":{"lat":7.2,"lon":80.9167}},"Matale District":{"Matale":{"lat":7.4717,"lon":80.6242},"Dambulla":{"lat":7.8569,"lon":80.6514},"Pallepola":{"lat":7.5167,"lon":80.6833},"Ukuwela":{"lat":7.4167,"lon":80.6333},"Yatawatta":{"lat":7.55,"lon":80.5833},"Galewela":{"lat":7.8667,"lon":80.5833},"Wilgamuwa":{"lat":7.7167,"lon":80.8333},"Naula":{"lat":7.7,"lon":80.65},"Rattota":{"lat":7.5167,"lon":80.7667},"Palapathwela":{"lat":7.5333,"lon":80.7167},"Laggala-Pallegama":{"lat":7.6167,"lon":80.8667}},"Nuwara Eliya District":{"Nuwara Eliya":{"lat":6.9706,"lon":80.7828},"Walapane":{"lat":7.0333,"lon":80.8667},"Hanguranketha":{"lat":7.1667,"lon":80.7833},"Ambagamuwa":{"lat":6.9333,"lon":80.55},"Kothmale":{"lat":7.0833,"lon":80.6333},"Kotmale":{"lat":7.1167,"lon":80.7},"Maskeliya":{"lat":6.8333,"lon":80.5667}}},"Southern Province":{"Galle District":{"Galle":{"lat":6.0536,"lon":80.2117},"Akmeemana":{"lat":6.0833,"lon":80.3},"Ambalangoda":{"lat":6.2333,"lon":80.05},"Baddegama":{"lat":6.1833,"lon":80.1833},"Balapitiya":{"lat":6.2833,"lon":80.0333},"Benthota":{"lat":6.4167,"lon":80.0},"Bope-Poddala":{"lat":6.1333,"lon":80.2},"Elpitiya":{"lat":6.2833,"lon":80.1667},"Habaraduwa":{"lat":6.0333,"lon":80.2833},"Imaduwa":{"lat":6.0667,"lon":80.3667},"Karandeniya":{"lat":6.25,"lon":80.1167},"Nagoda":{"lat":6.2,"lon":80.25},"Neluwa":{"lat":6.3667,"lon":80.3833},"Niyagama":{"lat":6.2333,"lon":80.2167},"Thawalama":{"lat":6.3333,"lon":80.3},"Welivitiya-Divithura":{"lat":6.4667,"lon":80.0833},"Yakkalamulla":{"lat":6.1167,"lon":80.3333}},"Matara District":{"Matara":{"lat":5.9483,"lon":80.5353},"Akuressa":{"lat":6.0833,"lon":80.4667},"Athuraliya":{"lat":6.0667,"lon":80.6167},"Devinuwara":{"lat":5.9333,"lon":80.5833},"Dickwella":{"lat":6.1167,"lon":80.7},"Hakmana":{"lat":6.0833,"lon":80.5833},"Kamburupitiya":{"lat":6.0833,"lon":80.5333},"Kirinda Puhulwella":{"lat":6.1333,"lon":80.55},"Kotapola":{"lat":6.2,"lon":80.65},"Malimbada":{"lat":5.9667,"lon":80.4833},"Mulatiyana":{"lat":6.2167,"lon":80.4833},"Pasgoda":{"lat":6.1667,"lon":80.6833},"Pitabeddara":{"lat":6.2333,"lon":80.4833},"Thihagoda":{"lat":6.0,"lon":80.5167},"Weligama":{"lat":5.9667,"lon":80.4333},"Welipitiya":{"lat":6.1667,"lon":80.5167}},"Hambantota District":{"Hambantota":{"lat":6.1244,"lon":81.1186},"Ambalantota":{"lat":6.1167,"lon":81.0333},"Angunakolapelessa":{"lat":6.1667,"lon":80.9},"Beliatta":{"lat":6.05,"lon":80.7333},"Lunugamvehera":{"lat":6.35,"lon":81.2333},"Okewela":{"lat":6.4333,"lon":81.3},"Sooriyawewa":{"lat":6.3,"lon":81.2333},"Tangalle":{"lat":6.0167,"lon":80.8},"Tissamaharama":{"lat":6.2833,"lon":81.2833},"Weeraketiya":{"lat":6.15,"lon":81.2}}},"Northern Province":{"Jaffna District":{"Jaffna":{"lat":9.6617,"lon":80.0256},"Nallur":{"lat":9.6833,"lon":80.0333},"Chavakachcheri":{"lat":9.6667,"lon":80.15},"Point Pedro":{"lat":9.8167,"lon":80.2333},"Kopay":{"lat":9.7333,"lon":80.0333}},"Vavuniya District":{"Vavuniya":{"lat":8.75,"lon":80.5}}},"Eastern Province":{"Trincomalee District":{"Trincomalee":{"lat":8.5667,"lon":81.2333}},"Batticaloa District":{"Batticaloa":{"lat":7.7167,"lon":81.7}},"Ampara District":{"Ampara":{"lat":7.2833,"lon":81.6667}}},"North Western Province":{"Kurunegala District":{"Kurunegala":{"lat":7.4833,"lon":80.3667}},"Puttalam District":{"Puttalam":{"lat":8.0333,"lon":79.8167}}},"North Central Province":{"Anuradhapura District":{"Anuradhapura":{"lat":8.335,"lon":80.4108}},"Polonnaruwa District":{"Polonnaruwa":{"lat":7.9333,"lon":81.0}}},"Uva Province":{"Badulla District":{"Badulla":{"lat":6.9897,"lon":81.056},"Bandarawela":{"lat":6.8256,"lon":80.9864},"Ella":{"lat":6.8667,"lon":81.05},"Haputale":{"lat":6.7667,"lon":80.9667},"Welimada":{"lat":6.9,"lon":80.9667}},"Monaragala District":{"Monaragala":{"lat":6.8714,"lon":81.3486}}},"Sabaragamuwa Province":{"Ratnapura District":{"Ratnapura":{"lat":6.6828,"lon":80.3992}},"Kegalle District":{"Kegalle":{"lat":7.2514,"lon":80.3464}}}};
@@ -957,452 +661,6 @@ const markets = {
   'Negombo':          [7.2085, 79.9743]
 };
 
-<<<<<<< HEAD
-let map;
-let markers = [];
-let polylines = [];
-let mapLoaded = false;
-let recommendationsData = null;
-let formDataData = null;
-
-function initLeafletMap() {
-    try {
-        // Center on Sri Lanka by default
-        const sriLanka = [7.8731, 80.7718];
-        map = L.map('googleMap', { zoomControl: true }).setView(sriLanka, 8);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Hide placeholder and show map
-        document.getElementById('mapPlaceholder').style.display = 'none';
-        mapLoaded = true;
-
-        // Initialize map with current coordinates if present
-        const lat = parseFloat(document.getElementById('latitude').value);
-        const lon = parseFloat(document.getElementById('longitude').value);
-        if (!isNaN(lat) && !isNaN(lon)) {
-            updateMap(lat, lon);
-        }
-
-        // If we have recommendations after form submission, show them
-        if (recommendationsData && recommendationsData.recommendations) {
-            setTimeout(() => showRecommendationsOnMap(), 500);
-        }
-    } catch (error) {
-        console.error('Leaflet initialization error:', error);
-    }
-}
-
-// Toggle cultivation cost field based on role
-function toggleCostField() {
-    const role = document.getElementById('user_role').value;
-    const cultivationCostField = document.getElementById('cultivation_cost');
-    const cultivationCostLabel = document.getElementById('cultivation_cost_label');
-    const cultivationCostNote = document.getElementById('cultivation_cost_note');
-
-    if (role === 'seller') {
-        cultivationCostField.required = true;
-        cultivationCostField.placeholder = "Enter total cultivation cost";
-        cultivationCostLabel.innerHTML = '<span class="required-field">Total Cost (Cultivation)</span>';
-        cultivationCostNote.textContent = "Required for Sellers (Cost for the quantity specified below)";
-    } else {
-        cultivationCostField.required = false;
-        cultivationCostField.value = "0";
-        cultivationCostField.placeholder = "Required for Sellers only";
-        cultivationCostLabel.innerHTML = 'Total Cost (Cultivation)';
-        cultivationCostNote.textContent = "Required only for Sellers";
-    }
-}
-
-// Update section titles based on role
-function updateSectionTitles() {
-    const role = document.getElementById('user_role').value;
-    const sectionTitle = document.getElementById('quantity_section_title');
-    const calculationFormula = document.getElementById('calculation_formula');
-
-    if (role === 'buyer') {
-        sectionTitle.textContent = "Target Item & Quantity Selection for Buyers";
-        calculationFormula.textContent = "For Buyers: Net Advantage = Transport Cost - (Predicted Price × Quantity in kg)";
-    } else if (role === 'seller') {
-        sectionTitle.textContent = "Target Item & Quantity Selection for Sellers";
-        calculationFormula.textContent = "For Sellers: Net Advantage = (Cultivation Cost + Transport Cost) - (Predicted Price × Quantity in kg)";
-    } else {
-        sectionTitle.textContent = "Target Item & Quantity Selection";
-        calculationFormula.textContent = "Select role to see calculation formula";
-    }
-}
-
-// Enable/disable location dropdowns
-function toggleLocationFields(enable) {
-    const provinceSelect = document.getElementById('province');
-    const districtSelect = document.getElementById('district');
-    const dsSelect = document.getElementById('ds_division');
-
-    if (enable) {
-        provinceSelect.disabled = false;
-        districtSelect.disabled = false;
-        dsSelect.disabled = false;
-    } else {
-        provinceSelect.disabled = true;
-        districtSelect.disabled = true;
-        dsSelect.disabled = true;
-        provinceSelect.value = '';
-        districtSelect.value = '';
-        dsSelect.value = '';
-    }
-}
-
-function updateDistricts() {
-    const province = document.getElementById('province').value;
-    const districtSelect = document.getElementById('district');
-    const dsSelect = document.getElementById('ds_division');
-
-    districtSelect.innerHTML = '<option value="">Select District</option>';
-    dsSelect.innerHTML = '<option value="">Select DS Division</option>';
-    clearCoordinates();
-
-    if (province && locationData[province]) {
-        Object.keys(locationData[province]).forEach(district => {
-            const option = document.createElement('option');
-            option.value = district;
-            option.textContent = district;
-            districtSelect.appendChild(option);
-        });
-    }
-}
-
-function updateDSDivisions() {
-    const province = document.getElementById('province').value;
-    const district = document.getElementById('district').value;
-    const dsSelect = document.getElementById('ds_division');
-
-    dsSelect.innerHTML = '<option value="">Select DS Division</option>';
-    clearCoordinates();
-
-    if (province && district && locationData[province] && locationData[province][district]) {
-        Object.keys(locationData[province][district]).forEach(ds => {
-            const option = document.createElement('option');
-            option.value = ds;
-            option.textContent = ds;
-            dsSelect.appendChild(option);
-        });
-    }
-}
-
-function updateCoordinates() {
-    const province = document.getElementById('province').value;
-    const district = document.getElementById('district').value;
-    const ds = document.getElementById('ds_division').value;
-
-    if (province && district && ds &&
-        locationData[province] &&
-        locationData[province][district] &&
-        locationData[province][district][ds]) {
-
-        const coords = locationData[province][district][ds];
-        document.getElementById('latitude').value = coords.lat;
-        document.getElementById('longitude').value = coords.lon;
-
-        // Update map with the selected location
-        updateMap(coords.lat, coords.lon);
-    } else {
-        clearCoordinates();
-    }
-}
-
-function clearCoordinates() {
-    document.getElementById('latitude').value = '';
-    document.getElementById('longitude').value = '';
-    clearMap();
-}
-
-function useCurrentLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-
-                document.getElementById('latitude').value = lat.toFixed(6);
-                document.getElementById('longitude').value = lon.toFixed(6);
-
-                // Disable dropdowns and clear their values
-                toggleLocationFields(false);
-
-                // Update map with current location
-                updateMap(lat, lon);
-            },
-            (error) => {
-                alert('Unable to retrieve your location. Please enable location services.');
-                console.error('Geolocation error:', error);
-            }
-        );
-    } else {
-        alert('Geolocation is not supported by your browser.');
-    }
-}
-
-function findClosestLocation(lat, lon) {
-    let closestProvince = '';
-    let closestDistrict = '';
-    let closestDS = '';
-    let minDistance = Infinity;
-
-    for (const [province, districts] of Object.entries(locationData)) {
-        for (const [district, dsList] of Object.entries(districts)) {
-            for (const [ds, coords] of Object.entries(dsList)) {
-                const distance = Math.sqrt(
-                    Math.pow(lat - coords.lat, 2) +
-                    Math.pow(lon - coords.lon, 2)
-                );
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestProvince = province;
-                    closestDistrict = district;
-                    closestDS = ds;
-                }
-            }
-        }
-    }
-
-    if (closestProvince && closestDistrict && closestDS) {
-        document.getElementById('province').value = closestProvince;
-        updateDistricts();
-        setTimeout(() => {
-            document.getElementById('district').value = closestDistrict;
-            updateDSDivisions();
-            setTimeout(() => {
-                document.getElementById('ds_division').value = closestDS;
-                updateCoordinates();
-            }, 100);
-        }, 100);
-    }
-}
-
-function initMap() {
-    // Backward compatibility: keep initMap name used elsewhere
-    initLeafletMap();
-}
-
-function updateMap(lat, lon) {
-    if (!mapLoaded) {
-        // If map is not loaded yet, queue the update
-        setTimeout(() => updateMap(lat, lon), 500);
-        return;
-    }
-
-    try {
-        // Clear existing markers and polylines
-        clearMap();
-
-        const userLocation = [lat, lon];
-
-        // Center map on user location
-        map.setView(userLocation, 12);
-
-        // Add marker for user location
-        const userMarker = L.marker(userLocation, { title: 'Your Location' }).addTo(map);
-        markers.push(userMarker);
-
-        // Add market locations
-        Object.entries(markets).forEach(([name, location]) => {
-            const marketMarker = L.marker([location[0], location[1]], { title: name + ' Market' }).addTo(map);
-            markers.push(marketMarker);
-        });
-    } catch (error) {
-        console.error('Error updating map:', error);
-    }
-}
-
-function showRecommendationsOnMap() {
-    if (!mapLoaded) {
-        setTimeout(() => showRecommendationsOnMap(), 500);
-        return;
-    }
-
-    try {
-        // Clear existing markers and polylines
-        clearMap();
-
-        // Get user location from form
-        const lat = parseFloat(document.getElementById('latitude').value);
-        const lon = parseFloat(document.getElementById('longitude').value);
-
-        if (isNaN(lat) || isNaN(lon)) {
-            console.error('Invalid user location coordinates');
-            return;
-        }
-
-        const userLocation = [lat, lon];
-
-        // Center map on user location
-        map.setView(userLocation, 10);
-
-        // Add marker for user location
-        const userMarker = L.marker(userLocation, { title: 'Your Location' }).addTo(map);
-        markers.push(userMarker);
-
-        // Get recommendations from the page
-        const recommendations = recommendationsData;
-
-        if (!recommendations || !recommendations.recommendations) {
-            console.error('No recommendations found');
-            return;
-        }
-
-        // Define colors for different ranks
-        const rankColors = {
-            1: '#00FF00', // Green for rank 1 (best market)
-            2: '#4169E1', // Royal Blue for rank 2
-            3: '#FFA500', // Orange for rank 3
-            other: '#808080' // Gray for other ranks
-        };
-
-        // Add markers and routes for each recommendation
-        recommendations.recommendations.forEach((rec) => {
-            const marketCoords = markets[rec.market];
-
-            if (!marketCoords) {
-                console.warn(`Market coordinates not found for: ${rec.market}`);
-                return;
-            }
-
-            const marketLocation = [marketCoords[0], marketCoords[1]];
-
-            // Determine color based on rank
-            let color = rankColors.other;
-            if (rec.rank === 1) color = rankColors[1];
-            else if (rec.rank === 2) color = rankColors[2];
-            else if (rec.rank === 3) color = rankColors[3];
-
-            // Add marker for market with popup
-            const popupHtml = `
-                <div style="padding: 8px; min-width: 200px;">
-                    <div style="font-weight: 700; margin-bottom: 6px;">${rec.market} (Rank #${rec.rank})</div>
-                    <div><strong>Distance:</strong> ${rec.distance_km} km</div>
-                    <div><strong>Predicted Price:</strong> Rs. ${rec.predicted_price}</div>
-                    <div><strong>Transport Cost:</strong> Rs. ${rec.transport_cost}</div>
-                    <div><strong>Net Advantage:</strong> <span style="color: ${rec.net_advantage >= 0 ? 'green' : 'red'};">Rs. ${rec.net_advantage}</span></div>
-                </div>
-            `;
-
-            const marketMarker = L.marker(marketLocation, { title: `${rec.market} (Rank #${rec.rank})` })
-                .addTo(map)
-                .bindPopup(popupHtml);
-
-            markers.push(marketMarker);
-
-            // Add polyline route from user to market
-            const route = L.polyline([userLocation, marketLocation], {
-                color: color,
-                opacity: rec.rank === 1 ? 1.0 : 0.7,
-                weight: rec.rank === 1 ? 4 : 2
-            }).addTo(map);
-
-            polylines.push(route);
-        });
-
-        // Add legend to map
-        addMapLegend();
-
-    } catch (error) {
-        console.error('Error showing recommendations on map:', error);
-    }
-}
-
-function addMapLegend() {
-    if (!map) return;
-    if (map._legendControl) {
-        map.removeControl(map._legendControl);
-        map._legendControl = null;
-    }
-
-    const legend = L.control({ position: 'bottomleft' });
-    legend.onAdd = function () {
-        const div = L.DomUtil.create('div', 'info legend');
-        div.id = 'map-legend';
-        div.style.cssText = `
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            max-width: 220px;
-        `;
-        div.innerHTML = `
-            <div style="margin-bottom: 8px; font-weight: bold;">Route Colors:</div>
-            <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                <div style="width: 20px; height: 4px; background-color: #00FF00; margin-right: 8px;"></div>
-                <div>Rank #1 (Best Market)</div>
-            </div>
-            <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                <div style="width: 20px; height: 4px; background-color: #4169E1; margin-right: 8px;"></div>
-                <div>Rank #2</div>
-            </div>
-            <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                <div style="width: 20px; height: 4px; background-color: #FFA500; margin-right: 8px;"></div>
-                <div>Rank #3</div>
-            </div>
-            <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                <div style="width: 20px; height: 4px; background-color: #808080; margin-right: 8px;"></div>
-                <div>Other Markets</div>
-            </div>
-        `;
-        return div;
-    };
-    legend.addTo(map);
-    map._legendControl = legend;
-}
-
-function clearMap() {
-    if (map) {
-        // Clear markers
-        markers.forEach(marker => {
-            try { map.removeLayer(marker); } catch (e) {}
-        });
-        markers = [];
-
-        // Clear polylines
-        polylines.forEach(polyline => {
-            try { map.removeLayer(polyline); } catch (e) {}
-        });
-        polylines = [];
-
-        // Clear legend
-        if (map._legendControl) {
-            map.removeControl(map._legendControl);
-            map._legendControl = null;
-        }
-    }
-}
-
-// Reset form & hide results (used for the Clear button and for page reloads)
-function resetFormAndResults() {
-    const form = document.getElementById('rankingForm');
-    if (form) form.reset();
-
-    // Manually clear key input fields (form.reset() restores HTML default values)
-    const fieldsToClear = [
-        'user_role',
-        'transport_cost',
-        'additional_transport_cost',
-        'cultivation_cost',
-        'item',
-        'price_type',
-        'quantity_unit',
-        'quantity',
-        'province',
-        'district',
-        'ds_division',
-        'latitude',
-        'longitude'
-    ];
-=======
 let map, markers = [], polylines = [], mapLoaded = false;
 let recommendationsData = null, formDataData = null;
 
@@ -1527,7 +785,6 @@ function toggleLocationFields(enable) {
     if (el) { el.disabled = !enable; if (!enable) el.selectedIndex = 0; }
   });
 }
->>>>>>> main
 
 function updateDistricts() {
   const p = document.getElementById('province').value;
@@ -1723,74 +980,14 @@ window.addEventListener('pageshow', e => {
   } catch(ex) {}
 });
 
-<<<<<<< HEAD
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const pageDataEl = document.getElementById('marketRankingData');
-    try {
-        recommendationsData = JSON.parse(pageDataEl?.dataset?.recommendations || 'null');
-    } catch (e) {
-        recommendationsData = null;
-    }
-    try {
-        formDataData = JSON.parse(pageDataEl?.dataset?.formData || 'null');
-    } catch (e) {
-        formDataData = null;
-    }
-
-    // Initialize cost field based on current role
-    toggleCostField();
-    updateSectionTitles();
-=======
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('marketRankingData');
   try { recommendationsData = JSON.parse(el?.dataset?.recommendations || 'null'); } catch(e) { recommendationsData = null; }
   try { formDataData = JSON.parse(el?.dataset?.formData || 'null'); } catch(e) { formDataData = null; }
->>>>>>> main
 
   toggleCostField(); updateSectionTitles(); toggleLocationFields(true);
   initLeafletMap();
 
-<<<<<<< HEAD
-    // Load Google Maps
-    initLeafletMap();
-
-    // If we have form data from previous submission
-    if (formDataData) {
-        setTimeout(() => {
-        // Set role and update UI
-        const roleSelect = document.getElementById('user_role');
-        if (roleSelect && formDataData.user_role) {
-            roleSelect.value = formDataData.user_role;
-            toggleCostField();
-            updateSectionTitles();
-        }
-
-        // Set location if provided
-        const provinceSelect = document.getElementById('province');
-        if (provinceSelect && formDataData.province) {
-            provinceSelect.value = formDataData.province;
-            updateDistricts();
-
-            setTimeout(() => {
-                const districtSelect = document.getElementById('district');
-                if (districtSelect && formDataData.district) {
-                    districtSelect.value = formDataData.district;
-                    updateDSDivisions();
-
-                    setTimeout(() => {
-                        const dsSelect = document.getElementById('ds_division');
-                        if (dsSelect && formDataData.ds_division) {
-                            dsSelect.value = formDataData.ds_division;
-                            updateCoordinates();
-                        }
-                    }, 100);
-                }
-            }, 100);
-        }
-        }, 500);
-    }
-=======
   /* Restore GPS location card after form submission (page reload) */
   try {
     var savedGps = localStorage.getItem('agrisense_gps');
@@ -1817,7 +1014,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 400);
   }
->>>>>>> main
 });
 
 /* ── PDF DOWNLOAD ── */
