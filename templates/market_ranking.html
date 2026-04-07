@@ -190,6 +190,13 @@
         height: 100%;
     }
 </style>
+<!-- Leaflet (OpenStreetMap) - no API key needed -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
 {% endblock %}
 
 {% block content %}
@@ -271,6 +278,16 @@
                                     Required only for Sellers
                                     {% endif %}
                                 </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Current Market Price (Rs./kg)
+                                    <span data-bs-toggle="tooltip" title="Your known price for this item. Helps the AI model give more accurate predictions.">ℹ️</span>
+                                </label>
+                                <input type="number" class="form-control" name="reference_price" id="reference_price"
+                                       step="0.01" min="0"
+                                       value="{% if form_data %}{{ form_data.get('reference_price', '') }}{% endif %}"
+                                       placeholder="Optional but improves accuracy">
+                                <small class="text-muted">Enter today's price if you know it</small>
                             </div>
                         </div>
                     </div>
@@ -613,9 +630,22 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Page data for JS (avoids API keys and keeps JS lint-friendly) -->
+<div
+  id="marketRankingData"
+  data-recommendations='{{ recommendations|tojson|safe if recommendations else "null" }}'
+  data-form-data='{{ form_data|tojson|safe if form_data else "null" }}'
+></div>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Leaflet (OpenStreetMap) - no API key needed -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
 <script>
 // Province, district and DS division data structure
 const locationData = {
@@ -1021,6 +1051,39 @@ let map;
 let markers = [];
 let polylines = [];
 let mapLoaded = false;
+let recommendationsData = null;
+let formDataData = null;
+
+function initLeafletMap() {
+    try {
+        // Center on Sri Lanka by default
+        const sriLanka = [7.8731, 80.7718];
+        map = L.map('googleMap', { zoomControl: true }).setView(sriLanka, 8);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Hide placeholder and show map
+        document.getElementById('mapPlaceholder').style.display = 'none';
+        mapLoaded = true;
+
+        // Initialize map with current coordinates if present
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lon = parseFloat(document.getElementById('longitude').value);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            updateMap(lat, lon);
+        }
+
+        // If we have recommendations after form submission, show them
+        if (recommendationsData && recommendationsData.recommendations) {
+            setTimeout(() => showRecommendationsOnMap(), 500);
+        }
+    } catch (error) {
+        console.error('Leaflet initialization error:', error);
+    }
+}
 
 // Toggle cultivation cost field based on role
 function toggleCostField() {
@@ -1210,33 +1273,8 @@ function findClosestLocation(lat, lon) {
 }
 
 function initMap() {
-    try {
-        // Create a default map centered on Sri Lanka
-        const sriLanka = {lat: 7.8731, lng: 80.7718};
-        map = new google.maps.Map(document.getElementById('googleMap'), {
-            zoom: 8,
-            center: sriLanka,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-        });
-
-        // Hide placeholder and show map
-        document.getElementById('mapPlaceholder').style.display = 'none';
-        mapLoaded = true;
-
-        // Initialize map with current location if coordinates exist
-        const lat = parseFloat(document.getElementById('latitude').value);
-        const lon = parseFloat(document.getElementById('longitude').value);
-        if (!isNaN(lat) && !isNaN(lon)) {
-            updateMap(lat, lon);
-        }
-
-        // If we have recommendations after form submission, show them
-        {% if recommendations %}
-        setTimeout(() => showRecommendationsOnMap(), 1000);
-        {% endif %}
-    } catch (error) {
-        console.error('Google Maps initialization error:', error);
-    }
+    // Backward compatibility: keep initMap name used elsewhere
+    initLeafletMap();
 }
 
 function updateMap(lat, lon) {
@@ -1250,33 +1288,18 @@ function updateMap(lat, lon) {
         // Clear existing markers and polylines
         clearMap();
 
-        const userLocation = {lat: lat, lng: lon};
+        const userLocation = [lat, lon];
 
         // Center map on user location
-        map.setCenter(userLocation);
-        map.setZoom(12);
+        map.setView(userLocation, 12);
 
         // Add marker for user location
-        const userMarker = new google.maps.Marker({
-            position: userLocation,
-            map: map,
-            title: 'Your Location',
-            icon: {
-                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-            }
-        });
+        const userMarker = L.marker(userLocation, { title: 'Your Location' }).addTo(map);
         markers.push(userMarker);
 
         // Add market locations
         Object.entries(markets).forEach(([name, location]) => {
-            const marketMarker = new google.maps.Marker({
-                position: {lat: location[0], lng: location[1]},
-                map: map,
-                title: name + ' Market',
-                icon: {
-                    url: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                }
-            });
+            const marketMarker = L.marker([location[0], location[1]], { title: name + ' Market' }).addTo(map);
             markers.push(marketMarker);
         });
     } catch (error) {
@@ -1303,25 +1326,17 @@ function showRecommendationsOnMap() {
             return;
         }
 
-        const userLocation = {lat: lat, lng: lon};
+        const userLocation = [lat, lon];
 
         // Center map on user location
-        map.setCenter(userLocation);
-        map.setZoom(10);
+        map.setView(userLocation, 10);
 
         // Add marker for user location
-        const userMarker = new google.maps.Marker({
-            position: userLocation,
-            map: map,
-            title: 'Your Location',
-            icon: {
-                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-            }
-        });
+        const userMarker = L.marker(userLocation, { title: 'Your Location' }).addTo(map);
         markers.push(userMarker);
 
         // Get recommendations from the page
-        const recommendations = {{ recommendations|tojson|safe if recommendations else 'null' }};
+        const recommendations = recommendationsData;
 
         if (!recommendations || !recommendations.recommendations) {
             console.error('No recommendations found');
@@ -1345,7 +1360,7 @@ function showRecommendationsOnMap() {
                 return;
             }
 
-            const marketLocation = {lat: marketCoords[0], lng: marketCoords[1]};
+            const marketLocation = [marketCoords[0], marketCoords[1]];
 
             // Determine color based on rank
             let color = rankColors.other;
@@ -1353,47 +1368,30 @@ function showRecommendationsOnMap() {
             else if (rec.rank === 2) color = rankColors[2];
             else if (rec.rank === 3) color = rankColors[3];
 
-            // Add marker for market
-            const marketMarker = new google.maps.Marker({
-                position: marketLocation,
-                map: map,
-                title: `${rec.market} (Rank #${rec.rank}) - Distance: ${rec.distance_km}km`,
-                icon: {
-                    url: `https://maps.google.com/mapfiles/ms/icons/${rec.rank === 1 ? 'yellow' : rec.rank <= 3 ? 'blue' : 'green'}-dot.png`
-                }
-            });
-            markers.push(marketMarker);
-
-            // Add info window for market marker
-            const infoContent = `
-                <div style="padding: 10px;">
-                    <h4 style="margin: 0 0 10px 0; color: ${rec.rank === 1 ? '#FFD700' : '#333'};">${rec.market}</h4>
-                    <p style="margin: 5px 0;"><strong>Rank:</strong> #${rec.rank}</p>
-                    <p style="margin: 5px 0;"><strong>Distance:</strong> ${rec.distance_km} km</p>
-                    <p style="margin: 5px 0;"><strong>Predicted Price:</strong> Rs. ${rec.predicted_price}</p>
-                    <p style="margin: 5px 0;"><strong>Transport Cost:</strong> Rs. ${rec.transport_cost}</p>
-                    <p style="margin: 5px 0;"><strong>Net Advantage:</strong> <span style="color: ${rec.net_advantage >= 0 ? 'green' : 'red'};">Rs. ${rec.net_advantage}</span></p>
+            // Add marker for market with popup
+            const popupHtml = `
+                <div style="padding: 8px; min-width: 200px;">
+                    <div style="font-weight: 700; margin-bottom: 6px;">${rec.market} (Rank #${rec.rank})</div>
+                    <div><strong>Distance:</strong> ${rec.distance_km} km</div>
+                    <div><strong>Predicted Price:</strong> Rs. ${rec.predicted_price}</div>
+                    <div><strong>Transport Cost:</strong> Rs. ${rec.transport_cost}</div>
+                    <div><strong>Net Advantage:</strong> <span style="color: ${rec.net_advantage >= 0 ? 'green' : 'red'};">Rs. ${rec.net_advantage}</span></div>
                 </div>
             `;
 
-            const infoWindow = new google.maps.InfoWindow({
-                content: infoContent
-            });
+            const marketMarker = L.marker(marketLocation, { title: `${rec.market} (Rank #${rec.rank})` })
+                .addTo(map)
+                .bindPopup(popupHtml);
 
-            marketMarker.addListener('click', () => {
-                infoWindow.open(map, marketMarker);
-            });
+            markers.push(marketMarker);
 
             // Add polyline route from user to market
-            const route = new google.maps.Polyline({
-                path: [userLocation, marketLocation],
-                geodesic: true,
-                strokeColor: color,
-                strokeOpacity: rec.rank === 1 ? 1.0 : 0.7,
-                strokeWeight: rec.rank === 1 ? 4 : 2
-            });
+            const route = L.polyline([userLocation, marketLocation], {
+                color: color,
+                opacity: rec.rank === 1 ? 1.0 : 0.7,
+                weight: rec.rank === 1 ? 4 : 2
+            }).addTo(map);
 
-            route.setMap(map);
             polylines.push(route);
         });
 
@@ -1406,80 +1404,70 @@ function showRecommendationsOnMap() {
 }
 
 function addMapLegend() {
-    const legendDiv = document.createElement('div');
-    legendDiv.id = 'map-legend';
-    legendDiv.style.cssText = `
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background: white;
-        padding: 10px;
-        border-radius: 5px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-        max-width: 200px;
-    `;
-
-    legendDiv.innerHTML = `
-        <div style="margin-bottom: 8px; font-weight: bold;">Route Colors:</div>
-        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <div style="width: 20px; height: 4px; background-color: #00FF00; margin-right: 8px;"></div>
-            <div>Rank #1 (Best Market)</div>
-        </div>
-        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <div style="width: 20px; height: 4px; background-color: #4169E1; margin-right: 8px;"></div>
-            <div>Rank #2</div>
-        </div>
-        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <div style="width: 20px; height: 4px; background-color: #FFA500; margin-right: 8px;"></div>
-            <div>Rank #3</div>
-        </div>
-        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-            <div style="width: 20px; height: 4px; background-color: #808080; margin-right: 8px;"></div>
-            <div>Other Markets</div>
-        </div>
-    `;
-
-    if (map && map.controls) {
-        map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(legendDiv);
+    if (!map) return;
+    if (map._legendControl) {
+        map.removeControl(map._legendControl);
+        map._legendControl = null;
     }
+
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'info legend');
+        div.id = 'map-legend';
+        div.style.cssText = `
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            max-width: 220px;
+        `;
+        div.innerHTML = `
+            <div style="margin-bottom: 8px; font-weight: bold;">Route Colors:</div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 20px; height: 4px; background-color: #00FF00; margin-right: 8px;"></div>
+                <div>Rank #1 (Best Market)</div>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 20px; height: 4px; background-color: #4169E1; margin-right: 8px;"></div>
+                <div>Rank #2</div>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 20px; height: 4px; background-color: #FFA500; margin-right: 8px;"></div>
+                <div>Rank #3</div>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <div style="width: 20px; height: 4px; background-color: #808080; margin-right: 8px;"></div>
+                <div>Other Markets</div>
+            </div>
+        `;
+        return div;
+    };
+    legend.addTo(map);
+    map._legendControl = legend;
 }
 
 function clearMap() {
     if (map) {
         // Clear markers
-        markers.forEach(marker => marker.setMap(null));
+        markers.forEach(marker => {
+            try { map.removeLayer(marker); } catch (e) {}
+        });
         markers = [];
 
         // Clear polylines
-        polylines.forEach(polyline => polyline.setMap(null));
+        polylines.forEach(polyline => {
+            try { map.removeLayer(polyline); } catch (e) {}
+        });
         polylines = [];
 
-        // Clear legend if exists
-        const legend = document.getElementById('map-legend');
-        if (legend && legend.parentNode) {
-            legend.parentNode.removeChild(legend);
+        // Clear legend
+        if (map._legendControl) {
+            map.removeControl(map._legendControl);
+            map._legendControl = null;
         }
     }
-}
-
-// Load Google Maps API
-function loadGoogleMaps() {
-    // Check if script is already loaded
-    if (window.google && window.google.maps) {
-        initMap();
-        return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDrSy2r_gHTnLbILR1joImzwErOp56G-7M&callback=initMap`;
-    script.async = true;
-    script.defer = true;
-    script.onerror = function() {
-        console.error('Failed to load Google Maps API.');
-    };
-    document.head.appendChild(script);
 }
 
 // Reset form & hide results (used for the Clear button and for page reloads)
@@ -1542,6 +1530,18 @@ window.addEventListener('pageshow', (event) => {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    const pageDataEl = document.getElementById('marketRankingData');
+    try {
+        recommendationsData = JSON.parse(pageDataEl?.dataset?.recommendations || 'null');
+    } catch (e) {
+        recommendationsData = null;
+    }
+    try {
+        formDataData = JSON.parse(pageDataEl?.dataset?.formData || 'null');
+    } catch (e) {
+        formDataData = null;
+    }
+
     // Initialize cost field based on current role
     toggleCostField();
     updateSectionTitles();
@@ -1550,43 +1550,43 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleLocationFields(true);
 
     // Load Google Maps
-    loadGoogleMaps();
+    initLeafletMap();
 
     // If we have form data from previous submission
-    {% if form_data %}
-    setTimeout(() => {
+    if (formDataData) {
+        setTimeout(() => {
         // Set role and update UI
         const roleSelect = document.getElementById('user_role');
-        if (roleSelect) {
-            roleSelect.value = '{{ form_data.user_role }}';
+        if (roleSelect && formDataData.user_role) {
+            roleSelect.value = formDataData.user_role;
             toggleCostField();
             updateSectionTitles();
         }
 
         // Set location if provided
         const provinceSelect = document.getElementById('province');
-        if (provinceSelect && '{{ form_data.province }}') {
-            provinceSelect.value = '{{ form_data.province }}';
+        if (provinceSelect && formDataData.province) {
+            provinceSelect.value = formDataData.province;
             updateDistricts();
 
             setTimeout(() => {
                 const districtSelect = document.getElementById('district');
-                if (districtSelect && '{{ form_data.district }}') {
-                    districtSelect.value = '{{ form_data.district }}';
+                if (districtSelect && formDataData.district) {
+                    districtSelect.value = formDataData.district;
                     updateDSDivisions();
 
                     setTimeout(() => {
                         const dsSelect = document.getElementById('ds_division');
-                        if (dsSelect && '{{ form_data.ds_division }}') {
-                            dsSelect.value = '{{ form_data.ds_division }}';
+                        if (dsSelect && formDataData.ds_division) {
+                            dsSelect.value = formDataData.ds_division;
                             updateCoordinates();
                         }
                     }, 100);
                 }
             }, 100);
         }
-    }, 500);
-    {% endif %}
+        }, 500);
+    }
 });
 
 

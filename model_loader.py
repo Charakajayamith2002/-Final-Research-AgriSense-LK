@@ -972,7 +972,7 @@ class ModelLoader:
             # Return empty feature array with standard size
             return np.zeros((1, 33))
 
-    # ============ COMPONENT 2 METHODS (UNCHANGED) ============
+    # ============ COMPONENT 2 METHODS ============
     def _load_component2(self):
         """Load Component 2 models"""
         model_path = 'models/2/'
@@ -988,12 +988,30 @@ class ModelLoader:
                 os.path.join(model_path, 'model_features.joblib')
             )
 
+            # Load label encoders
+            self.encoders['component2'] = joblib.load(
+                os.path.join(model_path, 'label_encoders.joblib')
+            )
+
+            # Load historical predictions for market price lookup
+            market_data = pd.read_csv(os.path.join(model_path, 'data_with_predictions.csv'))
+            market_data['report_date'] = pd.to_datetime(market_data['report_date'])
+            # Keep only the latest predicted_price per item/market/price_type
+            self.metadata['component2_market_data'] = (
+                market_data
+                .sort_values('report_date')
+                .groupby(['item_standard', 'market', 'price_type'], as_index=False)
+                .last()[['item_standard', 'market', 'price_type', 'predicted_price', 'anomaly_score']]
+            )
+
             print("Component 2 models loaded")
 
         except Exception as e:
             print(f"Error loading Component 2: {str(e)}")
             self.models['component2'] = None
             self.features['component2'] = []
+            self.encoders['component2'] = {}
+            self.metadata['component2_market_data'] = pd.DataFrame()
 
     def predict_component2(self, input_data):
         """Get market recommendations with quantity-based calculations"""
@@ -1025,13 +1043,16 @@ class ModelLoader:
             # Get user role
             user_role = input_data.get('user_role', 'buyer')
 
+            # Get reference price (used as baseline for model's historical price features)
+            reference_price = float(input_data.get('reference_price', 0)) or None
+
             # Get cultivation cost for sellers
             cultivation_cost = 0
             if user_role == 'seller':
                 cultivation_cost = float(input_data.get('cultivation_cost', 0))
                 # If cultivation cost not provided, estimate it based on predicted price and profitability
                 if cultivation_cost <= 0:
-                    predicted_price = self._estimate_price(input_data['item'], 'Dambulla', input_data['price_type'])
+                    predicted_price = self._estimate_price(input_data['item'], 'Dambulla', input_data['price_type'], reference_price)
                     profitability = float(input_data.get('profitability', 0.7))
                     # Estimate cost as price * (1 - profitability)
                     if profitability > 0:
@@ -1048,8 +1069,9 @@ class ModelLoader:
                     base_transport_cost = distance * transport_cost_per_km
                     transport_cost_total = base_transport_cost + additional_transport_cost
 
-                    # Get predicted price per kg
-                    predicted_price_per_kg = self._estimate_price(input_data['item'], market, input_data['price_type'])
+                    # Get predicted price per kg from model predictions CSV
+                    predicted_price_per_kg = self._estimate_price(input_data['item'], market, input_data['price_type'], reference_price)
+                    anomaly_score = self._get_anomaly_score(input_data['item'], market, input_data['price_type'])
 
                     # Calculate total price for the quantity
                     total_price = predicted_price_per_kg * quantity_kg
@@ -1069,7 +1091,7 @@ class ModelLoader:
                         'total_price': round(total_price, 2),
                         'cultivation_cost': round(cultivation_cost, 2),
                         'distance': round(distance, 2),
-                        'anomaly_score': 0.0
+                        'anomaly_score': round(anomaly_score, 2)
                     })
 
                 except Exception as e:
@@ -1140,82 +1162,47 @@ class ModelLoader:
         explanation += f" (Distance: {distance:.1f} km)"
         return explanation
 
-    def _estimate_price(self, item, market, price_type):
-        """Estimate price for a market (per kg)"""
-        # Base prices per kg based on your training data
-        base_prices = {
-            'Beans': {'Wholesale': 169.23, 'Retail': 250.0},
-            'Tomato': {'Wholesale': 150.0, 'Retail': 227.05},
-            'Carrot': {'Wholesale': 180.0, 'Retail': 220.0},
-            'Cabbage': {'Wholesale': 120.0, 'Retail': 150.0},
-            'Banana': {'Wholesale': 80.0, 'Retail': 100.0},
-            'Rice': {'Wholesale': 300.0, 'Retail': 350.0},
-            'Pumpkin': {'Wholesale': 120.0, 'Retail': 150.0},
-            'Brinjal': {'Wholesale': 130.0, 'Retail': 160.0},
-            'Green Chilli': {'Wholesale': 200.0, 'Retail': 250.0},
-            'Lime': {'Wholesale': 150.0, 'Retail': 180.0},
-            'Snake gourd': {'Wholesale': 140.0, 'Retail': 170.0},
-            'Apple': {'Wholesale': 300.0, 'Retail': 350.0},
-            'Orange': {'Wholesale': 250.0, 'Retail': 300.0},
-            'Samba': {'Wholesale': 280.0, 'Retail': 320.0},
-            'Nadu': {'Wholesale': 260.0, 'Retail': 300.0},
-            'Kekulu': {'Wholesale': 240.0, 'Retail': 280.0}
-        }
+    def _estimate_price(self, item, market, price_type, reference_price=None):
+        """Look up the latest model-predicted price for a given item/market/price_type."""
+        market_data = self.metadata.get('component2_market_data')
 
-        # Market multipliers
-        market_multipliers = {
-            'Pettah': 1.0,
-            'Dambulla': 0.9,
-            'Narahenpita': 1.1,
-            'Marandagahamula': 0.95,
-            'Peliyagoda': 1.05,
-            'Negombo': 0.98
-        }
+        if market_data is None or market_data.empty:
+            raise Exception("Component 2 market data not loaded")
 
-        # Find matching item
-        item_key = None
-        item_lower = item.lower()
-        for key in base_prices:
-            if key.lower() in item_lower:
-                item_key = key
-                break
+        # Try exact match first
+        mask = (
+            (market_data['item_standard'].str.lower() == item.lower()) &
+            (market_data['market'] == market) &
+            (market_data['price_type'] == price_type)
+        )
+        row = market_data[mask]
 
-        # If no exact match, try partial matches
-        if not item_key:
-            if 'bean' in item_lower:
-                item_key = 'Beans'
-            elif 'tomato' in item_lower:
-                item_key = 'Tomato'
-            elif 'carrot' in item_lower:
-                item_key = 'Carrot'
-            elif 'cabbage' in item_lower:
-                item_key = 'Cabbage'
-            elif 'banana' in item_lower:
-                item_key = 'Banana'
-            elif 'rice' in item_lower or 'samba' in item_lower or 'nadu' in item_lower or 'kekulu' in item_lower:
-                item_key = 'Rice'
-            elif 'pumpkin' in item_lower:
-                item_key = 'Pumpkin'
-            elif 'brinjal' in item_lower or 'eggplant' in item_lower:
-                item_key = 'Brinjal'
-            elif 'chilli' in item_lower or 'chili' in item_lower:
-                item_key = 'Green Chilli'
-            elif 'lime' in item_lower:
-                item_key = 'Lime'
+        # Fallback: partial item name match
+        if row.empty:
+            mask = (
+                market_data['item_standard'].str.contains(item, case=False, na=False) &
+                (market_data['market'] == market) &
+                (market_data['price_type'] == price_type)
+            )
+            row = market_data[mask]
 
-        if item_key:
-            base_price = base_prices[item_key].get(price_type, 200)
-        else:
-            base_price = 200  # Default per kg
+        if row.empty:
+            raise Exception(f"No prediction data for '{item}' at {market} ({price_type})")
 
-        # Apply market multiplier
-        multiplier = market_multipliers.get(market, 1.0)
+        return float(row.iloc[0]['predicted_price'])
 
-        # Add small random variation (±5%)
-        import random
-        variation = random.uniform(0.95, 1.05)
-
-        return base_price * multiplier * variation
+    def _get_anomaly_score(self, item, market, price_type):
+        """Get anomaly score for a given item/market/price_type from market data."""
+        market_data = self.metadata.get('component2_market_data')
+        if market_data is None or market_data.empty:
+            return 0.0
+        mask = (
+            (market_data['item_standard'].str.lower() == item.lower()) &
+            (market_data['market'] == market) &
+            (market_data['price_type'] == price_type)
+        )
+        row = market_data[mask]
+        return float(row.iloc[0]['anomaly_score']) if not row.empty else 0.0
 
     def _generate_market_explanation(self, recommendation, user_role, quantity_kg, cultivation_cost=0):
         """Generate explanation for market ranking with quantity"""
