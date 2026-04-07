@@ -152,41 +152,21 @@ MARKET_COORDINATES = {
 ITEM_DATA = {
     'Vegetables': {
         'local': ['Beans', 'Carrot', 'Cabbage', 'Tomato', 'Brinjal', 'Pumpkin', 'Snake gourd', 'Green Chilli', 'Lime'],
-        'markets': {
-            'Wholesale': ['Pettah', 'Dambulla'],
-            'Retail': ['Pettah', 'Dambulla', 'Narahenpita']
-        }
     },
     'Fruits': {
-        'local': ['Banana - Sour', 'Papaw', 'Pineapple'],
+        'local': ['Banana', 'Papaw', 'Pineapple'],
         'imported': ['Apple', 'Orange'],
-        'markets': {
-            'Wholesale': ['Pettah', 'Marandagahamula'],
-            'Retail': ['Pettah', 'Dambulla', 'Narahenpita']
-        }
     },
     'Rice': {
-        'local': ['Samba', 'Nadu', 'Kekulu (White)', 'Kekulu (Red)'],
-        'imported': ['Ponni Samba', 'Nadu', 'Kekulu (White)'],
-        'markets': {
-            'Wholesale': ['Pettah', 'Marandagahamula'],
-            'Retail': ['Pettah', 'Dambulla', 'Narahenpita']
-        }
+        'local': ['Samba', 'Nadu', 'Kekulu'],
+        'imported': ['Ponni Samba'],
     },
     'Other': {
-        'local': ['Big Onion', 'Potato', 'Coconut', 'Coconut oil', 'Sugar -White', 'Egg - White'],
+        'local': ['Big Onion', 'Potato', 'Coconut', 'Coconut oil', 'Sugar', 'Egg'],
         'imported': ['Red Onion', 'Big Onion', 'Potato', 'Dried Chilli', 'Red Dhal', 'Katta', 'Sprat'],
-        'markets': {
-            'Wholesale': ['Pettah', 'Dambulla'],
-            'Retail': ['Pettah', 'Dambulla', 'Narahenpita']
-        }
     },
     'Fish': {
         'local': ['Kelawalla', 'Thalapath', 'Balaya', 'Paraw', 'Salaya', 'Hurulla', 'Linna'],
-        'markets': {
-            'Wholesale': ['Peliyagoda', 'Negombo'],
-            'Retail': ['Pettah', 'Negombo', 'Narahenpita']
-        }
     }
 }
 
@@ -517,7 +497,8 @@ def market_ranking():
                 'additional_transport_cost': additional_transport_cost,
                 'quantity': quantity,
                 'quantity_unit': quantity_unit,
-                'cultivation_cost': cultivation_cost
+                'cultivation_cost': cultivation_cost,
+                'reference_price': float(form_data.get('reference_price', 0) or 0),
             }
 
             # Get recommendations
