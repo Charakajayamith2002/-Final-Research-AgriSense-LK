@@ -407,13 +407,13 @@
   <div class="container">
     <div class="hero-inner">
       <div class="animate-in">
-        <div class="hero-badge"><i class="fas fa-camera"></i> Computer Vision AI</div>
-        <h1>Quality Grading &amp;<br><em>Income Prediction</em></h1>
-        <p>Upload crop images — our deep learning model grades quality and predicts your per-kg income instantly.</p>
+        <div class="hero-badge" data-i18n="yqs_badge"><i class="fas fa-camera"></i> Computer Vision AI</div>
+        <h1><span data-i18n="yqs_hero_title">Quality Grading &amp;</span><br><em data-i18n="yqs_hero_title_em">Income Prediction</em></h1>
+        <p data-i18n="yqs_hero_desc">Upload crop images — our deep learning model grades quality and predicts your per-kg income instantly.</p>
       </div>
       <div class="animate-in" style="animation-delay:0.12s">
         <div class="hero-pill">
-          <strong>Upload images</strong> → <strong>Enter price</strong> → <strong>Get grade &amp; income</strong>
+          <strong data-i18n="yqs_step1">Upload images</strong> → <strong data-i18n="yqs_step2">Enter price</strong> → <strong data-i18n="yqs_step3">Get grade &amp; income</strong>
         </div>
       </div>
     </div>
@@ -432,8 +432,8 @@
           <div class="form-card-header">
             <div class="fch-icon fch-icon-red"><i class="fas fa-upload"></i></div>
             <div>
-              <h3>Upload Crop Images</h3>
-              <p>Select one or more images for batch analysis</p>
+              <h3 data-i18n="yqs_form_title">Upload Crop Images</h3>
+              <p data-i18n="yqs_form_sub">Select one or more images for batch analysis</p>
             </div>
           </div>
           <div class="form-card-body">
@@ -447,15 +447,15 @@
 
             <form method="POST" enctype="multipart/form-data" id="uploadForm">
 
-              <div class="section-label"><i class="fas fa-images" style="color:var(--green-500)"></i> Image Selection</div>
+              <div class="section-label"><i class="fas fa-images" style="color:var(--green-500)"></i> <span data-i18n="yqs_sec_images">Image Selection</span></div>
 
               <!-- Drop zone -->
               <div class="dropzone" id="dropzone">
                 <input type="file" id="imageInput" name="images" accept="image/*" multiple required>
                 <div class="dropzone-icon">🌿</div>
-                <div class="dropzone-title">Drop images here or click to browse</div>
-                <div class="dropzone-sub">Supports JPG, PNG, WEBP — multiple files allowed</div>
-                <span class="dropzone-badge">Computer Vision Ready</span>
+                <div class="dropzone-title" data-i18n="yqs_drop_title">Drop images here or click to browse</div>
+                <div class="dropzone-sub" data-i18n="yqs_drop_sub">Supports JPG, PNG, WEBP — multiple files allowed</div>
+                <span class="dropzone-badge" data-i18n="yqs_drop_badge">Computer Vision Ready</span>
               </div>
 
               <!-- Preview -->
@@ -465,21 +465,21 @@
               <div class="section-divider"></div>
 
               <!-- Unit price -->
-              <div class="section-label"><i class="fas fa-tag" style="color:var(--green-500)"></i> Market Price</div>
+              <div class="section-label"><i class="fas fa-tag" style="color:var(--green-500)"></i> <span data-i18n="yqs_sec_price">Market Price</span></div>
 
               <div class="field-group" style="margin-bottom:22px;">
-                <label class="form-label">Best Unit Price <span class="tip">(market rate per kg)</span></label>
+                <label class="form-label"><span data-i18n="yqs_lbl_price">Best Unit Price</span> <span class="tip" data-i18n="yqs_tip_price">(market rate per kg)</span></label>
                 <div class="input-prefix-wrap">
                   <span class="input-prefix">Rs.</span>
                   <input type="number" class="form-control" id="bestUnitPrice"
                          name="best_unit_price" placeholder="0.00" step="0.01" required>
                 </div>
-                <span class="field-hint">Enter the current wholesale or retail price you expect per kg</span>
+                <span class="field-hint" data-i18n="yqs_hint_price">Enter the current wholesale or retail price you expect per kg</span>
               </div>
 
               <button type="submit" class="btn-predict" id="analyzeBtn">
                 <i class="fas fa-microscope"></i>
-                <span>Analyse Images</span>
+                <span data-i18n="yqs_btn_analyse">Analyse Images</span>
               </button>
 
             </form>
@@ -490,15 +490,15 @@
         <div class="model-strip animate-in" style="animation-delay:0.1s;">
           <div class="model-chip">
             <div class="model-chip-icon"><i class="fas fa-brain"></i></div>
-            <div><h6>CNN Vision Model</h6><p>Deep Learning Classifier</p></div>
+            <div><h6 data-i18n="yqs_chip1_title">CNN Vision Model</h6><p data-i18n="yqs_chip1_sub">Deep Learning Classifier</p></div>
           </div>
           <div class="model-chip">
             <div class="model-chip-icon"><i class="fas fa-layer-group"></i></div>
-            <div><h6>4 Grade Classes</h6><p>A · B · C · D quality tiers</p></div>
+            <div><h6 data-i18n="yqs_chip2_title">4 Grade Classes</h6><p data-i18n="yqs_chip2_sub">A · B · C · D quality tiers</p></div>
           </div>
           <div class="model-chip">
             <div class="model-chip-icon"><i class="fas fa-bolt"></i></div>
-            <div><h6>Instant Results</h6><p>Batch processing supported</p></div>
+            <div><h6 data-i18n="yqs_chip3_title">Instant Results</h6><p data-i18n="yqs_chip3_sub">Batch processing supported</p></div>
           </div>
         </div>
       </div>
@@ -510,7 +510,7 @@
           <div class="form-card-header">
             <div class="fch-icon"><i class="fas fa-chart-bar"></i></div>
             <div>
-              <h3>Prediction Results</h3>
+              <h3 data-i18n="yqs_results_title">Prediction Results</h3>
               <p>AI grading complete — {{ prediction.num_images }} image{{ 's' if prediction.num_images != 1 }} analysed</p>
             </div>
           </div>
@@ -523,15 +523,15 @@
                 <div class="grade-word">Grade</div>
               </div>
               <div class="grade-info" style="flex:1;">
-                <div class="grade-info-label">Overall Predicted Grade</div>
+                <div class="grade-info-label" data-i18n="yqs_grade_label">Overall Predicted Grade</div>
                 <div class="grade-info-title">
-                  {% if prediction.predicted_class == 'A' %}Premium Quality
-                  {% elif prediction.predicted_class == 'B' %}Good Quality
-                  {% elif prediction.predicted_class == 'C' %}Average Quality
-                  {% else %}Below Standard{% endif %}
+                  {% if prediction.predicted_class == 'A' %}<span data-i18n="yqs_grade_premium">Premium Quality</span>
+                  {% elif prediction.predicted_class == 'B' %}<span data-i18n="yqs_grade_good">Good Quality</span>
+                  {% elif prediction.predicted_class == 'C' %}<span data-i18n="yqs_grade_avg">Average Quality</span>
+                  {% else %}<span data-i18n="yqs_grade_below">Below Standard</span>{% endif %}
                 </div>
                 <div class="conf-row">
-                  <span class="conf-label">Confidence</span>
+                  <span class="conf-label" data-i18n="yqs_conf_label">Confidence</span>
                   <div class="conf-track">
                     <div class="conf-fill" id="confFill" style="width:{{ (prediction.mean_probability * 100)|round|int }}%;"></div>
                   </div>
@@ -552,39 +552,39 @@
               <div class="stat-box">
                 <div class="stat-icon">📊</div>
                 <div class="stat-val">{{ "%.1f"|format(prediction.mean_probability * 100) }}%</div>
-                <div class="stat-lbl">Mean Probability</div>
+                <div class="stat-lbl" data-i18n="yqs_stat_mean_prob">Mean Probability</div>
               </div>
               <div class="stat-box">
                 <div class="stat-icon">🖼️</div>
                 <div class="stat-val">{{ prediction.num_images }}</div>
-                <div class="stat-lbl">Images Analysed</div>
+                <div class="stat-lbl" data-i18n="yqs_stat_images">Images Analysed</div>
               </div>
               <div class="stat-box">
                 <div class="stat-icon">💰</div>
                 <div class="stat-val">Rs. {{ "%.0f"|format(prediction.best_unit_price) }}</div>
-                <div class="stat-lbl">Market Rate /kg</div>
+                <div class="stat-lbl" data-i18n="yqs_stat_rate">Market Rate /kg</div>
               </div>
             </div>
 
             <!-- Price highlight -->
             <div class="price-card">
               <div>
-                <div class="price-label">Predicted Unit Price</div>
+                <div class="price-label" data-i18n="yqs_price_label">Predicted Unit Price</div>
                 <div class="price-val">Rs. {{ "%.2f"|format(prediction.mean_probability * prediction.best_unit_price) }}</div>
-                <div class="price-sub">per kg · Grade {{ prediction.predicted_class }}</div>
+                <div class="price-sub"><span data-i18n="yqs_price_sub">per kg</span> · Grade {{ prediction.predicted_class }}</div>
               </div>
-              <div class="price-badge">per kg</div>
+              <div class="price-badge" data-i18n="yqs_price_badge">per kg</div>
             </div>
 
             <!-- Individual results table -->
-            <div class="results-table-title">Individual Image Results</div>
+            <div class="results-table-title" data-i18n="yqs_table_title">Individual Image Results</div>
             <div style="overflow-x:auto;">
               <table class="yq-table">
                 <thead>
                   <tr>
-                    <th>Image</th>
-                    <th>Grade</th>
-                    <th>Confidence</th>
+                    <th data-i18n="yqs_th_image">Image</th>
+                    <th data-i18n="yqs_th_grade">Grade</th>
+                    <th data-i18n="yqs_th_conf">Confidence</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -622,8 +622,8 @@
         <!-- Empty state -->
         <div class="state-card animate-in" style="animation-delay:0.1s;">
           <div class="state-icon"><i class="fas fa-camera"></i></div>
-          <h4>Results will appear here</h4>
-          <p>Upload your crop images and enter a unit price, then click <strong>Analyse Images</strong> to see AI grading results.</p>
+          <h4 data-i18n="yqs_empty_title">Results will appear here</h4>
+          <p data-i18n="yqs_empty_desc">Upload your crop images and enter a unit price, then click <strong>Analyse Images</strong> to see AI grading results.</p>
         </div>
         {% endif %}
       </div>
